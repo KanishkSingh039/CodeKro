@@ -1,0 +1,26 @@
+{
+  "name": "@codekro/auth-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon src/auth-server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@codekro/db_config": "workspace:*",
+    "@codekro/logger": "workspace:*",
+    "@codekro/redis-config": "workspace:*",
+    "bcrypt": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongodb": "^7.6.0",
+    "mongoose": "^9.10.1",
+    "nodemon": "^3.1.14",
+    "redis": "^6.2.1"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@codekro/redis-config",
+  "version": "1.0.0",
+  "description": "",
+  "main": "redisconfig.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@codekro/logger": "workspace:*",
+    "dotenv": "^18.0.0",
+    "redis": "^6.2.1"
+  }
+}

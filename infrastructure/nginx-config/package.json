@@ -1,0 +1,19 @@
+{
+  "name": "@codekro/nginx-config",
+  "version": "1.0.0",
+  "description": "",
+  "main": "Gateway.js",
+  "scripts": {
+    "dev":"nodemon Gateway.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@codekro/logger": "workspace:*",
+    "dotenv": "^18.0.0",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.14"
+  }
+}

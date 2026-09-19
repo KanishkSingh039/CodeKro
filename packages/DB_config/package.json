@@ -1,0 +1,19 @@
+{
+  "name": "@codekro/db_config",
+  "version": "1.0.0",
+  "description": "",
+  "main": "db_config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@codekro/logger": "workspace:*",
+    "dotenv": "^18.0.0",
+    "mongodb": "^7.6.0",
+    "mongoose": "^9.10.1"
+  }
+}
