@@ -1,0 +1,20 @@
+{
+  "name": "@codekro/problem-service",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/problem-server.js",
+  "scripts": {
+    "dev":"nodemon src/problem-server.js"
+  },
+  "dependencies": {
+    "@codekro/db_config": "workspace:*",
+    "@codekro/logger": "workspace:*",
+    "dotenv": "^18.0.1",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.14"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

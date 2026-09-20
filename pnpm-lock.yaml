@@ -177,6 +177,24 @@ importers:
         specifier: ^2.10.12
         version: 2.10.12
 
+  apps/Problem-service:
+    dependencies:
+      '@codekro/db_config':
+        specifier: workspace:*
+        version: link:../../packages/DB_config
+      '@codekro/logger':
+        specifier: workspace:*
+        version: link:../../packages/logger
+      dotenv:
+        specifier: ^18.0.1
+        version: 18.0.1
+      express:
+        specifier: ^5.2.1
+        version: 5.2.1(supports-color@5.5.0)
+      nodemon:
+        specifier: ^3.1.14
+        version: 3.1.14
+
   apps/auth-service:
     dependencies:
       '@codekro/db_config':
@@ -212,21 +230,6 @@ importers:
       redis:
         specifier: ^6.2.1
         version: 6.2.1
-
-  infrastructure/nginx-config:
-    dependencies:
-      '@codekro/logger':
-        specifier: workspace:*
-        version: link:../../packages/logger
-      dotenv:
-        specifier: ^18.0.0
-        version: 18.0.0
-      express:
-        specifier: ^5.2.1
-        version: 5.2.1(supports-color@5.5.0)
-      nodemon:
-        specifier: ^3.1.14
-        version: 3.1.14
 
   packages/DB_config:
     dependencies:
@@ -435,6 +438,11 @@ packages:
 
   dotenv@18.0.0:
     resolution: {integrity: sha512-16YSUvsKtKbwrTbESvtTSZzzJUug6jdFdqiBFg9Q6Bk1JY9r0hAtrtTiWxdI9YrsgOTmkjZRdgU0n3LnwGpECw==}
+    engines: {node: '>=12'}
+    hasBin: true
+
+  dotenv@18.0.1:
+    resolution: {integrity: sha512-0eR4m4D/jH5eaI3evo2ZqqMii5mrTCR12v12VChdie6O1gPHs7XAjzTep0CWc1Bd+oNx3vVfbi734dK4zghigw==}
     engines: {node: '>=12'}
     hasBin: true
 
@@ -996,6 +1004,8 @@ snapshots:
   dotenv@17.4.2: {}
 
   dotenv@18.0.0: {}
+
+  dotenv@18.0.1: {}
 
   dunder-proto@1.0.1:
     dependencies:
