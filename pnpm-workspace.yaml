@@ -2,7 +2,10 @@ packages:
   - "apps/*"
   - "packages/*"
 allowBuilds:
+  '@google/genai': false
+  '@openrouter/sdk': false
   bcrypt: false
+  protobufjs: false
 minimumReleaseAgeExclude:
   - mongoose@9.10.1
   - dotenv@18.0.0
