@@ -5,7 +5,9 @@ allowBuilds:
   '@google/genai': false
   '@openrouter/sdk': false
   bcrypt: false
+  cpu-features: false
   protobufjs: false
+  ssh2: false
 minimumReleaseAgeExclude:
   - mongoose@9.10.1
   - dotenv@18.0.0

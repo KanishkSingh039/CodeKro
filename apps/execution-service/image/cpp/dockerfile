@@ -1,0 +1,5 @@
+FROM gcc:14
+WORKDIR /wdr
+RUN useradd -m runner
+USER runner
+CMD ["sh", "-c", "g++ main.cpp -o program && ./program"]

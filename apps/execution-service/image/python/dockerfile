@@ -1,0 +1,5 @@
+FROM python:3.11
+WORKDIR /wdr
+RUN useradd -m runner
+USER runner
+CMD [ "python3","main.py" ]
