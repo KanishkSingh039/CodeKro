@@ -45,6 +45,8 @@ const execution = async (req, res) => {
             force: true
         });
         logger.info("Execution successful", output);
+        fs.writeFileSync("./temp_wrd/input.txt","");    
+        fs.writeFileSync(`./temp_wrd/main.${language}`,"");
         return res.status(200).json({ message: "Execution successful", output:output.trim(), error:error.trim() });
     }
     catch(err)
