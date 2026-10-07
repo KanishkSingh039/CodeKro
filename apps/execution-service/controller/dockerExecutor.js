@@ -4,7 +4,7 @@ const path=require("path");
 const docker=new Docker({
     socketPath: "/Users/kanishk/.docker/run/docker.sock"
 });
-const dockerExecutor= async(code,language,input,command)=>{
+const dockerExecutor= async(language,command)=>{
     try {
         const imagePath = path.resolve(
             __dirname,
