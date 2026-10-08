@@ -1,6 +1,5 @@
 const logger = require("@codekro/logger");
 const { GoogleGenAI } = require("@google/genai");
-const { json } = require("express");
 const LLM_service=async(prompt)=>{
     try {
         const client=new GoogleGenAI({

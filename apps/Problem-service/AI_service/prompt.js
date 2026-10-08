@@ -6,8 +6,7 @@ const prompt=(service)=>{
             logger.error("Service not provided")
             return "Service not provided";
         }
-        if(service=="Generate_Problem")
-        {
+        
             return `
 Generate a programming problem about DSA (Data Structures and Algorithms) with level like leetcode for preperation for interviews.
 
@@ -50,10 +49,7 @@ Requirements:
 
 Generate the problem now.
 `;
-        }
-        if(service=="Judge_result"){
-            return "y";
-        }
+        
         
     } catch (error) {
         return error;

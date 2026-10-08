@@ -1,6 +1,7 @@
 require('dotenv').config();
 const mongoose=require('mongoose');
 const logger=require('@codekro/logger');
+const Solution=require("./Schemas/Solution");
 const connectToMongo=()=>{
     const MONGO_URL=process.env.MONGO_URL;
     if(!MONGO_URL){
@@ -15,4 +16,4 @@ const connectToMongo=()=>{
     })
 }
 
-module.exports={mongoose,connectToMongo};
+module.exports={mongoose,connectToMongo,Solution};

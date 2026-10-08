@@ -2,10 +2,13 @@ const logger = require("@codekro/logger");
 const fs=require("fs");
 const path=require("path");
 const {PassThrough}=require("stream");
+const {judgementService}=require("./judgementService_controller");
 const { dockerExecutor } = require("./dockerExecutor");
+const { client } = require("../../../packages/redis-config/redisconfig");
+const Solution=require("@codekro/db_config").Solution;
 const execution = async (req, res) => {
     try {
-        const { code, language, input } = req.body;
+        const { code, language, input ,test_case } = req.body;
         if (!code || !language || !input)
             return res.status(400).json({ message: "Bad Request" });
         const workDir = path.resolve(
@@ -64,9 +67,20 @@ const execution = async (req, res) => {
             force: true
         });
         logger.info("Execution successful", output);
+        const judgement=await judgementService(output,test_case,code,language);
+        const StoreSolutionInDB= await Solution.create({
+            user_id:req.user_id,
+            problem_id:req.problem_id,
+            language:language,
+            code:code,
+            input:input,
+            output:output,
+            error:error,
+            judgement:judgement
+        });
+        client.lpush("solutions",JSON.stringify(StoreSolutionInDB));
         
-        
-        return res.status(200).json({ message: "Execution successful", output:output.trim(), error:error.trim() });
+        return res.status(200).json({ message: "Execution successful", output:output.trim(), judgement:judgement , error:error.trim() });
     }
     catch(err)
     {
