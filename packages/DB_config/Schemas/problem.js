@@ -1,4 +1,4 @@
-const {mongoose}=require('@codekro/db_config');
+const {mongoose}=require('mongoose');
 
 const problemSchema=new mongoose.Schema({
     user_id:{

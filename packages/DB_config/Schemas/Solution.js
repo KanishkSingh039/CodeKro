@@ -1,4 +1,4 @@
-const mongoose=require('../db_config');
+const {mongoose}=require('mongoose');
 
 const SolutionSchema=new mongoose.Schema({
     user_id:{
@@ -15,7 +15,6 @@ const SolutionSchema=new mongoose.Schema({
     },
     error:{
         type:String,
-        required:true
     },
     code:{
         type:String,
@@ -30,7 +29,7 @@ const SolutionSchema=new mongoose.Schema({
         required:true
     },
     judgement:{
-        type:String,
+        type:Object,
         required:true
     }
 });

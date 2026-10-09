@@ -1,7 +1,7 @@
 const logger = require("@codekro/logger");
 const {LLM_service}=require("../AI_service/LLm");
 const {prompt}=require("../AI_service/prompt");
-const problemSchema=require("../schema/problem")
+const problemSchema=require("../../../packages/DB_config/Schemas/problem")
 const {client}=require("@codekro/cache_config")
 const AI_serviceController=async(req,res)=>{
     try {
