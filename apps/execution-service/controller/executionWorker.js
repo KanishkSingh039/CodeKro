@@ -9,14 +9,14 @@ const executionWorker=async()=>{
         await consumer.connect();
         // const length=await consumer.lLen("problem-queue");
         const data=await consumer.lRange("problem-queue",0,-1);
-        await data?.map(async (item)=>{
-        const details=await consumer.brPop("problem-queue",0);
+        await data?.map(async ()=>{
+        const details=await consumer.rPop("problem-queue",0);
             if(!details)
             {
                 logger.error("No problem found for user", details);
                 return;
             }
-            const {code,language,input,user,problem,test_case}=JSON.parse(details.element);
+            const {code,language,input,user,problem,test_case}=JSON.parse(details);
             try {
                 const {output,error}=await dockerExecutor(language,input,code);
                     
@@ -32,7 +32,7 @@ const executionWorker=async()=>{
                         judgement:judgement
                     });
                     await client.lPush(`solution : ${user}:${problem}`,JSON.stringify(StoreSolutionInDB));
-                    await client.lRem("problem-queue",0,JSON.stringify(item)); 
+             
                
             } catch (error) {
                 logger.error(`job failed ${error.stack}`);
