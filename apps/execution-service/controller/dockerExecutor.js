@@ -2,18 +2,23 @@ const logger=require("@codekro/logger");
 const Docker=require("dockerode");
 const path=require("path");
 const {PassThrough}=require("stream");
+const fsp=require("fs/promises");
 const fs=require("fs");
+const os=require("os");
 
 const docker=new Docker({
     socketPath: "/Users/kanishk/.docker/run/docker.sock"
 });
-const dockerExecutor= async(language,input,code)=>{
+const dockerExecutor= async(language,input,code,problem)=>{
     try {
-        const workDir = path.resolve(
-            __dirname,
-            "../",
-            "temp_wdr"
-        );
+        const tempRootDir=path.join(os.tmpdir(),"codekro");
+        await fsp.mkdir(tempRootDir, { recursive: true },(err) => {
+        if (err) throw err;
+        console.log("Directory created");
+        });
+
+        const workDir=await fsp.mkdtemp(path.join(tempRootDir,`${problem.toString()}`));
+        
         fs.writeFileSync(path.join(workDir,"input.txt"),input);    
         fs.writeFileSync(path.join(workDir,`main.${language}`),code);
         const imagePath = path.resolve(

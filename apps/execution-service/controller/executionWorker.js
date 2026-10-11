@@ -18,7 +18,7 @@ const executionWorker=async()=>{
             }
             const {code,language,input,user,problem,test_case}=JSON.parse(details);
             try {
-                const {output,error}=await dockerExecutor(language,input,code);
+                const {output,error}=await dockerExecutor(language,input,code,problem);
                     
                     const judgement=await judgementService(output,test_case,code,language);
                     const StoreSolutionInDB= await Solution.create({

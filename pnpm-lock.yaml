@@ -245,9 +245,15 @@ importers:
 
   apps/execution-service:
     dependencies:
+      '@codekro/db_config':
+        specifier: workspace:*
+        version: link:../../packages/DB_config
       '@codekro/logger':
         specifier: workspace:*
         version: link:../../packages/logger
+      '@codekro/redis-config':
+        specifier: workspace:*
+        version: link:../../packages/redis-config
       dockerode:
         specifier: ^5.0.1
         version: 5.0.1(supports-color@5.5.0)
@@ -263,6 +269,7 @@ importers:
       nodemon:
         specifier: ^3.1.14
         version: 3.1.14
+      os: {specifier: ^0.1.2, version: 0.1.2}
       path:
         specifier: ^0.12.7
         version: 0.12.7
@@ -1024,6 +1031,9 @@ packages:
         optional: true
       zod:
         optional: true
+
+  os@0.1.2:
+    resolution: {integrity: sha512-ZoXJkvAnljwvc56MbvhtKVWmSkzV712k42Is2mA0+0KTSRakq5XXuXpjZjgAt9ctzl51ojhQWakQQpmOvXWfjQ==}
 
   p-retry@4.6.2:
     resolution: {integrity: sha512-312Id396EbJdvRONlngUx0NydfrIQ5lsYu0znKVUzVvArzEIt08V1qhtyESbGVd1FGX7UKtiFp5uwKZdM8wIuQ==}
@@ -1940,6 +1950,8 @@ snapshots:
     optionalDependencies:
       ws: 8.22.0
       zod: 4.6.5
+
+  os@0.1.2: {}
 
   p-retry@4.6.2:
     dependencies:
