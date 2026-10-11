@@ -9,7 +9,7 @@ const fetch_problem=async(req,res)=>{
             logger.error("User_id is empty ")
             return res.status(400).json({ message: "Bad Request" });
         }
-        const problem=await client.RPOP(`problem:${user_id}`);
+        const problem=await client.lRange(`problem:${user_id}`,0,-1);
         if(!problem)
         {
             logger.error("Cache miss");
