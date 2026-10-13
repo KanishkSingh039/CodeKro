@@ -6,6 +6,7 @@ allowBuilds:
   '@openrouter/sdk': false
   bcrypt: false
   cpu-features: false
+  msgpackr-extract: false
   protobufjs: false
   ssh2: false
 minimumReleaseAgeExclude:

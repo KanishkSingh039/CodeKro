@@ -11,6 +11,10 @@ const docker=new Docker({
 });
 const dockerExecutor= async(language,input,code,problem)=>{
     try {
+        if(!language || !input || !code || !problem){
+            logger.error("Invalid input",language,input,code,problem);
+            throw new Error("Invalid input");
+        }
         const tempRootDir=path.join(os.tmpdir(),"codekro");
         await fsp.mkdir(tempRootDir, { recursive: true },(err) => {
         if (err) throw err;

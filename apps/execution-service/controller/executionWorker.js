@@ -1,25 +1,18 @@
+const {Worker}=require("bullmq");
 const {dockerExecutor}=require("./dockerExecutor");
 const {judgementService}=require("./judgementService_controller");
-const {client}=require("@codekro/redis-config");
-const Solution=require("@codekro/db_config").Solution;
+const {io_client}=require("@codekro/io-redis-config");
+const {Solution}=require("@codekro/db_config");
 const logger=require("@codekro/logger");
+const {IOQueue}=require("../queue/IOqueue");
+const solutionQueue=IOQueue("solution-queue");
 const executionWorker=async()=>{
-    const consumer=client.duplicate();
-    try {
-        await consumer.connect();
-        // const length=await consumer.lLen("problem-queue");
-        const data=await consumer.lRange("problem-queue",0,-1);
-        data?.map(async ()=>{
-        const details=await consumer.rPop("problem-queue",0);
-            if(!details)
-            {
-                logger.error("No problem found for user", details);
-                return;
-            }
-            const {code,language,input,user,problem,test_case}=JSON.parse(details);
+    const worker=new Worker("problem-queue",
+        async(job)=>{
+            const {code,language,input,user,problem,test_case}=job.data;
             try {
                 const {output,error}=await dockerExecutor(language,input,code,problem);
-                    
+                    const jobid=`solution_${user}_${problem}`
                     const judgement=await judgementService(output,test_case,code,language);
                     const StoreSolutionInDB= await Solution.create({
                         user_id:user,
@@ -31,19 +24,39 @@ const executionWorker=async()=>{
                         error:error,
                         judgement:judgement
                     });
-                    await client.lPush(`solution : ${user}:${problem}`,JSON.stringify(StoreSolutionInDB));
-             
+                    await solutionQueue.add("solution-submit",{
+                        StoreSolutionInDB,
+                        user
+                    },{
+                        jobId:jobid
+                    })
+             return StoreSolutionInDB;
                
             } catch (error) {
                 logger.error(`job failed ${error.stack}`);
                 
             }
             
-        });
-    }        
-    finally{
-        await consumer.quit()
-    }
-    }
-
+        },
+        {
+            connection:io_client,
+            concurrency:2
+        }
+    )
+    worker.on("error",(error)=>{
+        logger.error("Worker error",error.stack);
+    });
+    worker.on("closed",()=>{
+        logger.info("Worker closed");
+    });
+    worker.on("active",()=>{
+        logger.info("Worker active");
+    });
+    worker.on("completed",(job,result)=>{
+        logger.info("Worker completed",job.data,result);
+    });
+    worker.on("failed",(job,error)=>{
+        logger.error("Worker failed",job.data,error.stack);
+    });
+}
 module.exports={executionWorker}
