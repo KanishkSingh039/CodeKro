@@ -1,0 +1,135 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: dark;
+
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Theme Tokens - Dark (Default) */
+  --bg-base: #0B1217;
+  --bg-surface: #111A21;
+  --bg-surface-subtle: #16222B;
+  --bg-surface-hover: #1A2833;
+  --bg-input: #0E161C;
+  --border-default: #1F2C35;
+  --border-subtle: #18232B;
+  --text-primary: #E6EDF1;
+  --text-secondary: #8B9AA5;
+  --text-muted: #5C6B76;
+
+  /* Accent Color - Green is exclusively for primary actions, links, focus rings, and success */
+  --accent-primary: #00ED64;
+  --accent-hover: #00C853;
+  --accent-text: #001E2B;
+  --accent-focus-ring: rgba(0, 237, 100, 0.35);
+
+  /* Status Tokens */
+  --color-error: #EF4444;
+  --color-error-bg: rgba(239, 68, 68, 0.1);
+  --color-success: #00ED64;
+
+  /* Geometry & Shadows */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.4);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg-base: #F7F9FA;
+  --bg-surface: #FFFFFF;
+  --bg-surface-subtle: #F0F3F5;
+  --bg-surface-hover: #E4E8EC;
+  --bg-input: #FFFFFF;
+  --border-default: #DCE2E6;
+  --border-subtle: #E8ECEF;
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #64748B;
+
+  --accent-primary: #00A344;
+  --accent-hover: #008738;
+  --accent-text: #FFFFFF;
+  --accent-focus-ring: rgba(0, 163, 68, 0.25);
+
+  --color-error: #DC2626;
+  --color-error-bg: rgba(220, 38, 38, 0.08);
+  --color-success: #00A344;
+
+  --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+}
+
+@theme {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-surface-subtle: var(--bg-surface-subtle);
+  --color-bg-surface-hover: var(--bg-surface-hover);
+  --color-bg-input: var(--bg-input);
+
+  --color-border-default: var(--border-default);
+  --color-border-subtle: var(--border-subtle);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  --color-accent: var(--accent-primary);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-text: var(--accent-text);
+
+  --color-error: var(--color-error);
+  --color-success: var(--color-success);
+}
+
+@layer base {
+  * {
+    font-family: var(--font-sans);
+    border-color: var(--border-default);
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    min-height: 100vh;
+  }
+
+  code, pre, .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  /* Accessible focus outlines using design token */
+  :focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+  }
+}
+
+/* Faint engineering grid pattern (<4% opacity, no colored blobs) */
+.codekro-subtle-grid {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+}
+
+:root[data-theme="light"] .codekro-subtle-grid {
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

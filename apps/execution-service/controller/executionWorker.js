@@ -9,7 +9,7 @@ const executionWorker=async()=>{
         await consumer.connect();
         // const length=await consumer.lLen("problem-queue");
         const data=await consumer.lRange("problem-queue",0,-1);
-        await data?.map(async ()=>{
+        data?.map(async ()=>{
         const details=await consumer.rPop("problem-queue",0);
             if(!details)
             {
