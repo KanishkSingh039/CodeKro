@@ -29,6 +29,11 @@
   --color-error-bg: rgba(239, 68, 68, 0.1);
   --color-success: #00ED64;
 
+  /* Difficulty Tokens - Used ONLY on small text labels */
+  --difficulty-easy: #00ED64;
+  --difficulty-medium: #FFA116;
+  --difficulty-hard: #FF6B6B;
+
   /* Geometry & Shadows */
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -59,6 +64,10 @@
   --color-error-bg: rgba(220, 38, 38, 0.08);
   --color-success: #00A344;
 
+  --difficulty-easy: #00A344;
+  --difficulty-medium: #D97706;
+  --difficulty-hard: #DC2626;
+
   --shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
 }
 
@@ -85,6 +94,10 @@
 
   --color-error: var(--color-error);
   --color-success: var(--color-success);
+
+  --color-difficulty-easy: var(--difficulty-easy);
+  --color-difficulty-medium: var(--difficulty-medium);
+  --color-difficulty-hard: var(--difficulty-hard);
 }
 
 @layer base {

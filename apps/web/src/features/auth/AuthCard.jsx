@@ -7,7 +7,7 @@ import LoginForm from './LoginForm';
 import RegisterForm from './RegisterForm';
 import { COPY } from '../../constants/copy';
 
-export default function AuthCard({ activeTab, onTabChange }) {
+export default function AuthCard({ activeTab, onTabChange, onSuccess }) {
   const isLogin = activeTab === 'login';
 
   const tabs = [
@@ -47,9 +47,15 @@ export default function AuthCard({ activeTab, onTabChange }) {
 
           {/* Form Content */}
           {isLogin ? (
-            <LoginForm onSwitchToRegister={() => onTabChange('register')} />
+            <LoginForm
+              onSwitchToRegister={() => onTabChange('register')}
+              onSuccess={onSuccess}
+            />
           ) : (
-            <RegisterForm onSwitchToLogin={() => onTabChange('login')} />
+            <RegisterForm
+              onSwitchToLogin={() => onTabChange('login')}
+              onSuccess={onSuccess}
+            />
           )}
         </div>
       </Card>

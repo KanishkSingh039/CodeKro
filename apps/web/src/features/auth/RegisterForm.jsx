@@ -7,7 +7,7 @@ import Link from '../../components/ui/Link';
 import { COPY } from '../../constants/copy';
 import { apiClient } from '../../lib/api';
 
-export default function RegisterForm({ onSwitchToLogin }) {
+export default function RegisterForm({ onSwitchToLogin, onSuccess }) {
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -55,6 +55,9 @@ export default function RegisterForm({ onSwitchToLogin }) {
         email: formData.email,
         password: formData.password,
       });
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (err) {
       console.error(err);
     } finally {
