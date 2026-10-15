@@ -1,5 +1,5 @@
 const logger = require("@codekro/logger");
-const prompt=(service)=>{
+const prompt=(service,history)=>{
     try {
         if(!service)
         {
@@ -8,49 +8,65 @@ const prompt=(service)=>{
         }
         
             return `
-Generate a programming problem about DSA (Data Structures and Algorithms) with level like leetcode for preperation for interviews.
+You are an expert DSA problem setter for a coding platform similar to LeetCode.
 
-Return ONLY valid JSON.
-Do NOT use Markdown.
-Do NOT wrap the JSON inside \`\`\`json.
-Do NOT include any text before or after the JSON.
+USER REQUEST:
+${service}
 
-The JSON must have exactly these fields:
+PREVIOUSLY GENERATED PROBLEMS:
+${history || "No previous problems provided."}
+
+UNIQUENESS REQUIREMENTS:
+
+Generate exactly ONE new programming problem.
+
+Do not repeat any previous problem.
+
+Do not reuse a previous problem with only a different title or wording.
+
+Compare the algorithm, core concept, input structure, and expected solution approach against the history.
+
+Choose a genuinely different problem concept when a similar problem exists in history.
+
+If a requested topic is repeated, create a different problem within that topic.
+
+OUTPUT REQUIREMENTS:
+Return ONLY valid JSON. Do not use Markdown or code fences.
+Return exactly these fields:
 
 {
-  "title": "string",
-  "description": "string",
-  "example_test_cases": [
-    {
-      "input": {},
-      "output": {}
-    }
-  ],
-  "edge_cases": [],
-  "constraints": [],
-  "expected_output": "string",
-  "complexity": {
-    "time": "string",
-    "space": "string"
-  }
+"title": "string",
+"description": "string",
+"test_case": [
+{
+"input": {},
+"output": {}
+}
+],
+"edge_cases": ["string"],
+"constraints": ["string"],
+"expected_output": "string",
+"complexity": {
+"time": "string",
+"space": "string"
+},
+"difficulty": "easy"
 }
 
-Requirements:
-- "title" must contain the problem title.
-- "description" must contain the complete problem statement.
-- "example_test_cases" must contain at least 2 examples.
-- Each example must contain "input" and "output".
-- "edge_cases" must be an array of strings.
-- "constraints" must be an array of strings.
-- "expected_output" must describe what the program should return.
-- "complexity" must contain "time" and "space".
-- The output must be valid JSON.
-- Use double quotes for all JSON keys and string values.
+Additional rules:
 
-Generate the problem now.
-`;
-        
-        
+Include at least two meaningful test cases.
+
+Each test case must contain input and output fields.
+
+Use valid JSON types for all values.
+
+Difficulty must be exactly "easy", "medium", or "hard".
+
+Ensure the problem statement, examples, and expected output agree.
+
+Return exactly one problem, not a list of problems.
+`;      
     } catch (error) {
         return error;
     }

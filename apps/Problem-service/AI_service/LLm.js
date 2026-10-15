@@ -21,7 +21,7 @@ const LLM_service=async(prompt)=>{
                 ]
             }
         )
-        logger.info("Problem", res.text);
+        logger.info(`PROBLEM CREATED ${res.text}`);
         return JSON.parse(res.text)||null;
     } catch (error) {
         // logger.error("Failed to generate problem", error.message);

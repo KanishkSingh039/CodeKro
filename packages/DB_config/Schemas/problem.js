@@ -1,5 +1,17 @@
-const {mongoose}=require('mongoose');
-
+const mongoose=require('mongoose');
+const testCaseSchema = new mongoose.Schema(
+    {
+        input: {
+            type: mongoose.Schema.Types.Mixed,
+            required: true,
+        },
+        output: {
+            type: mongoose.Schema.Types.Mixed,
+            required: true,
+        },
+    },
+    { _id: false }
+);
 const problemSchema=new mongoose.Schema({
     user_id:{
         type:String,
@@ -14,7 +26,7 @@ const problemSchema=new mongoose.Schema({
         required:true
     },
     test_case:{
-        type:String,
+        type:[testCaseSchema],
         required:true
     },
     difficulty:{

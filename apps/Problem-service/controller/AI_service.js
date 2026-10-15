@@ -1,8 +1,9 @@
 const logger = require("@codekro/logger");
-const {LLM_service}=require("../AI_service/LLm");
-const {prompt}=require("../AI_service/prompt");
-const problemSchema=require("../../../packages/DB_config/Schemas/problem")
-const {client}=require("@codekro/cache_config")
+const {IOQueue}=require("../queue/queue");
+const {QueueEvents}=require("bullmq")
+const problemgeneratorQueue=IOQueue("problem-generator-queue");
+const {io_client}=require("@codekro/io-redis-config");
+const IOqueueEvents=new QueueEvents("problem-generator-queue",{connection:io_client});
 const AI_serviceController=async(req,res)=>{
     try {
         const {user_id,service}=req.body;
@@ -11,18 +12,21 @@ const AI_serviceController=async(req,res)=>{
             logger.error("User_id/service is empty ")
             return res.status(400).json({ message: "Bad Request" });
         }
-        const problem=await LLM_service(prompt(service));
-        logger.info("Problem generated", problem);
-        const SaveProblemAtDB=await problemSchema.create({
+        const job=await problemgeneratorQueue.add("problem-generator",{
             user_id:user_id,
-            title:problem.title,
-            description:problem.description,
-            test_case:problem.test_case,
-            difficulty:problem.difficulty
-        })
-        await client.LPUSH(`problem:${SaveProblemAtDB._id}`,JSON.stringify(SaveProblemAtDB));
-        logger.info("Problem saved to database", SaveProblemAtDB);
-        return res.status(200).json({ message: "Problem generated", SaveProblemAtDB });
+            service:service
+        },
+    {
+        jobId:`problem_${user_id}`,
+        removeOnComplete: true,
+        removeOnFail: true
+    });
+        
+        
+        const problem=await job.waitUntilFinished(IOqueueEvents,60000);
+        
+        logger.info("Problem generated", problem);
+        return res.status(200).json({ message: "Problem generated", problem });
     } catch (error) {
         logger.error("Failed to generate problem", error.message);
         res.status(500).json({ message: error.message });

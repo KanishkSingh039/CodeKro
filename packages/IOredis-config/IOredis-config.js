@@ -1,7 +1,7 @@
 require("dotenv").config();
 const Redis=require("ioredis");
 const logger=require("@codekro/logger");
-const IO_REDIS_URL=process.env.REDIS_URL;
+const IO_REDIS_URL=process.env.IO_REDIS_URL;
 if(!IO_REDIS_URL){
  logger.error("IO_REDIS_URL is not defined");
  throw new Error("IO_REDIS_URL is not defined");
