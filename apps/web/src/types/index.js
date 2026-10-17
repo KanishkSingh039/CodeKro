@@ -116,4 +116,95 @@
  * @property {string} [sort]
  */
 
+/**
+ * @typedef {'Idle' | 'Queued' | 'Running' | 'Accepted' | 'Wrong Answer' | 'Runtime Error' | 'Compile Error' | 'Time Limit Exceeded' | 'Memory Limit Exceeded'} JudgeStatus
+ */
+
+/**
+ * @typedef {Object} TestCase
+ * @property {string} id
+ * @property {string} input
+ * @property {string} expectedOutput
+ * @property {string} [actualOutput]
+ * @property {string} [stdout]
+ * @property {boolean} [isPassed]
+ */
+
+/**
+ * @typedef {Object} Example
+ * @property {number} id
+ * @property {string} input
+ * @property {string} output
+ * @property {string} [explanation]
+ */
+
+/**
+ * @typedef {Object} EditorialApproach
+ * @property {string} id
+ * @property {string} title
+ * @property {string} timeComplexity
+ * @property {string} spaceComplexity
+ * @property {string} description
+ * @property {Record<string, string>} code
+ */
+
+/**
+ * @typedef {Object} SolutionItem
+ * @property {string} id
+ * @property {string} title
+ * @property {string} author
+ * @property {number} upvotes
+ * @property {string[]} tags
+ * @property {string} language
+ * @property {string} preview
+ * @property {string} createdAt
+ */
+
+/**
+ * @typedef {Object} ProblemDetail
+ * @property {number} id
+ * @property {number} frontendQuestionId
+ * @property {string} title
+ * @property {string} titleSlug
+ * @property {DifficultyLevel} difficulty
+ * @property {number} acceptanceRate
+ * @property {ProblemStatus} status
+ * @property {number} frequency
+ * @property {boolean} isBookmarked
+ * @property {string[]} topicTags
+ * @property {string[]} companies
+ * @property {string} description
+ * @property {Example[]} examples
+ * @property {string[]} constraints
+ * @property {string[]} hints
+ * @property {string} [followUp]
+ * @property {number} likes
+ * @property {number} dislikes
+ * @property {'like' | 'dislike' | null} [userVote]
+ * @property {TestCase[]} testCases
+ * @property {Record<string, string>} starterCode
+ * @property {EditorialApproach[]} [editorial]
+ * @property {boolean} [isEditorialLocked]
+ * @property {SolutionItem[]} [solutions]
+ */
+
+/**
+ * @typedef {Object} RunResult
+ * @property {string} submissionId
+ * @property {JudgeStatus} status
+ * @property {number} passedCases
+ * @property {number} totalCases
+ * @property {string} [runtime]
+ * @property {string} [memory]
+ * @property {number} [runtimePercentile]
+ * @property {number} [memoryPercentile]
+ * @property {string} [compileError]
+ * @property {string} [runtimeError]
+ * @property {number} [errorLine]
+ * @property {string} [stdout]
+ * @property {TestCase[]} [testResults]
+ * @property {TestCase} [failingCase]
+ */
+
 export {};
+

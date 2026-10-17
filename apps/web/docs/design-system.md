@@ -93,5 +93,44 @@ Supports `primary`, `secondary`, and `ghost` variants across `sm`, `md`, and `lg
 
 - **`AuthLayout`**: Split-screen 2-column layout on desktop (short value proposition on the left, centered 420px card on the right); single-column on mobile.
 - **`AppLayout`**: Reusable dashboard shell with header, optional sidebar slot, and main content area for Problems, Contests, and Profile pages.
+- **`ProblemLayout`**: Dedicated full-height distraction-free workspace (`/problems/:slug`):
+  - Desktop: Resizable horizontal split view (Left: 45% problem tabs, Right: 55% editor & console). Draggable divider with keyboard arrows support (`aria-valuenow`, `aria-valuemin`, `aria-valuemax`). Right pane splits vertically into Monaco Editor (65%) and test/console panel (35%). Remembers layout dimensions in `localStorage`.
+  - Mobile (<1024px): Single-column workspace with segmented switcher (`Description` | `Code` | `Results`) and a sticky bottom Run/Submit bar.
 - **Centralized Copy (`src/constants/copy.js`)**: All user-facing strings are decoupled from JSX markup for maintainability and scalability.
 - **API Stub (`src/lib/api.js`)**: Isolated backend contract ready for endpoint integration without touching backend code.
+
+---
+
+## 5. Problem Workspace & Status Badge Rules
+
+### Judge Status System & Color Rules
+
+Status indicators **always** pair high-contrast text with an explicit geometric icon to satisfy WCAG AA requirements; status is never communicated through color alone.
+
+| Status | Icon | Color Treatment | Description |
+|---|---|---|---|
+| `ACCEPTED` | Checkmark (`✓`) | Green (`#00ED64` dark / `#00A344` light) | All test cases passed within limits |
+| `WRONG_ANSWER` | Cross (`✕`) | Amber/Red subtle text (`#FFA116` / `#FF6B6B`) | Output does not match expected output |
+| `TIME_LIMIT_EXCEEDED` | Clock (`⏱`) | Amber (`#FFA116`) | Execution exceeded allotted CPU time |
+| `MEMORY_LIMIT_EXCEEDED` | Chip (`💾`) | Amber (`#FFA116`) | Exceeded maximum allowable memory |
+| `RUNTIME_ERROR` | Alert Circle (`⚠️`) | Red (`#FF6B6B`) | Non-zero exit code or uncaught exception |
+| `COMPILE_ERROR` | File Warning (`📄!`) | Red (`#FF6B6B`) | Language compiler/transpiler failed |
+| `QUEUED` / `RUNNING` | Spinner (`⏳` / `⟳`) | Neutral Secondary (`#8B9AA5`) | Asynchronous queue and worker execution |
+
+### Difficulty Labels
+
+Difficulty labels are applied exclusively to small text pill elements:
+- **Easy**: Accent Green (`#00ED64` dark / `#00A344` light)
+- **Medium**: Amber (`#FFA116`)
+- **Hard**: Coral Red (`#FF6B6B`)
+
+### Split Pane Accessibility & Keyboard Escapes
+
+- **Dividers**: Fully keyboard operable using Arrow keys (`ArrowLeft`, `ArrowRight`, `ArrowUp`, `ArrowDown`) with `Home` and `End` keys to reset or snap panes.
+- **Monaco Focus Trap Escape**: Press `Esc` then `Tab` to escape Monaco Editor's internal tab capture and resume normal page DOM tab navigation.
+- **Keyboard Shortcuts**:
+  - `Ctrl/Cmd + '`: Run sample test cases
+  - `Ctrl/Cmd + Enter`: Submit solution to judge queue
+  - `?`: Open keyboard shortcuts cheat sheet
+  - `/`: Focus problem search / filter bar
+

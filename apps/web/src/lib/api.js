@@ -833,4 +833,449 @@ export const apiClient = {
       isBookmarked: userBookmarks.has(numId),
     };
   },
+
+  /**
+   * GET /api/problems/:slug
+   */
+  async getProblemBySlug(slug) {
+    await new Promise((r) => setTimeout(r, 70));
+    const normalizedSlug = (slug || 'two-sum').toLowerCase();
+    const foundProblem = rawProblems.find(
+      (p) => p.titleSlug.toLowerCase() === normalizedSlug || String(p.id) === normalizedSlug || String(p.frontendQuestionId) === normalizedSlug
+    );
+
+    if (!foundProblem && normalizedSlug !== 'two-sum') {
+      const err = new Error(`Problem "${slug}" not found`);
+      err.status = 404;
+      throw err;
+    }
+
+    const base = foundProblem || rawProblems[0];
+
+    // Read stored user votes if any
+    let votes = { likes: 14250, dislikes: 820, userVote: null };
+    try {
+      const stored = localStorage.getItem(`codekro_vote_${base.id}`);
+      if (stored) votes = JSON.parse(stored);
+    } catch {
+      // fallback
+    }
+
+    // Default starter codes for the problem
+    const starterCode = {
+      'cpp': `class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        unordered_map<int, int> seen;\n        for (int i = 0; i < nums.size(); ++i) {\n            int complement = target - nums[i];\n            if (seen.find(complement) != seen.end()) {\n                return {seen[complement], i};\n            }\n            seen[nums[i]] = i;\n        }\n        return {};\n    }\n};`,
+      'java': `class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        Map<Integer, Integer> map = new HashMap<>();\n        for (int i = 0; i < nums.length; i++) {\n            int complement = target - nums[i];\n            if (map.containsKey(complement)) {\n                return new int[] { map.get(complement), i };\n            }\n            map.put(nums[i], i);\n        }\n        return new int[] {};\n    }\n}`,
+      'python': `class Solution:\n    def twoSum(self, nums: list[int], target: int) -> list[int]:\n        seen = {}\n        for i, num in enumerate(nums):\n            complement = target - num\n            if complement in seen:\n                return [seen[complement], i]\n            seen[num] = i\n        return []`,
+      'javascript': `/**\n * @param {number[]} nums\n * @param {number} target\n * @return {number[]}\n */\nvar twoSum = function(nums, target) {\n    const map = new Map();\n    for (let i = 0; i < nums.length; i++) {\n        const complement = target - nums[i];\n        if (map.has(complement)) {\n            return [map.get(complement), i];\n        }\n        map.set(nums[i], i);\n    }\n    return [];\n};`,
+      'go': `func twoSum(nums []int, target int) []int {\n    seen := make(map[int]int)\n    for i, num := range nums {\n        complement := target - num\n        if idx, ok := seen[complement]; ok {\n            return []int{idx, i}\n        }\n        seen[num] = i\n    }\n    return nil\n}`,
+    };
+
+    const testCases = [
+      {
+        id: 'case-1',
+        input: 'nums = [2,7,11,15], target = 9',
+        expectedOutput: '[0,1]',
+        actualOutput: '[0,1]',
+        isPassed: true,
+      },
+      {
+        id: 'case-2',
+        input: 'nums = [3,2,4], target = 6',
+        expectedOutput: '[1,2]',
+        actualOutput: '[1,2]',
+        isPassed: true,
+      },
+      {
+        id: 'case-3',
+        input: 'nums = [3,3], target = 6',
+        expectedOutput: '[0,1]',
+        actualOutput: '[0,1]',
+        isPassed: true,
+      },
+    ];
+
+    const examples = [
+      {
+        id: 1,
+        input: 'nums = [2,7,11,15], target = 9',
+        output: '[0,1]',
+        explanation: 'Because nums[0] + nums[1] == 9, we return [0, 1].',
+      },
+      {
+        id: 2,
+        input: 'nums = [3,2,4], target = 6',
+        output: '[1,2]',
+        explanation: 'Because nums[1] + nums[2] == 6, we return [1, 2].',
+      },
+      {
+        id: 3,
+        input: 'nums = [3,3], target = 6',
+        output: '[0,1]',
+        explanation: 'Because nums[0] + nums[1] == 6, we return [0, 1].',
+      },
+    ];
+
+    const constraints = [
+      '2 <= nums.length <= 10^4',
+      '-10^9 <= nums[i] <= 10^9',
+      '-10^9 <= target <= 10^9',
+      'Only one valid answer exists.',
+    ];
+
+    const hints = [
+      "A really brute force way would be to search for all possible pairs of numbers but that would be too slow. Again, it's best to try out brute force solutions just for completeness, which is often a great way to start an interview.",
+      "So, if we fix one of the numbers, say x, we have to scan the entire array to find the next number y which is value - x. Can we change our array somehow so that this search becomes faster?",
+      "The second train of thought is, without changing the array, can we use additional space like a hash map to check whether y = target - x already exists in O(1) time?",
+    ];
+
+    const editorial = [
+      {
+        id: 'approach-1',
+        title: 'Approach 1: One-Pass Hash Table (Optimal)',
+        timeComplexity: 'O(n) - We traverse the list containing n elements only once. Each lookup in the hash table takes O(1) time on average.',
+        spaceComplexity: 'O(n) - The extra space required depends on the number of items stored in the hash table, which stores at most n elements.',
+        description:
+          'While we iterate through the array, we check if the complement `target - nums[i]` exists in our hash table. If it exists, we return its index and the current index. If it does not exist, we store `nums[i]` and its index into the hash table for subsequent queries.',
+        code: {
+          'cpp': `vector<int> twoSum(vector<int>& nums, int target) {\n    unordered_map<int, int> seen;\n    for (int i = 0; i < nums.size(); ++i) {\n        int complement = target - nums[i];\n        if (seen.count(complement)) {\n            return {seen[complement], i};\n        }\n        seen[nums[i]] = i;\n    }\n    return {};\n}`,
+          'python': `def twoSum(nums: list[int], target: int) -> list[int]:\n    seen = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in seen:\n            return [seen[complement], i]\n        seen[num] = i\n    return []`,
+        },
+      },
+      {
+        id: 'approach-2',
+        title: 'Approach 2: Two-Pass Hash Table',
+        timeComplexity: 'O(n) - Two iterations over the array.',
+        spaceComplexity: 'O(n) - Space for the hash table.',
+        description:
+          'In the first pass, we add each element\'s value and its index to the table. In the second pass, we check if each element\'s complement (`target - nums[i]`) exists in the table and verify that the complement is not `nums[i]` itself.',
+        code: {
+          'cpp': `vector<int> twoSum(vector<int>& nums, int target) {\n    unordered_map<int, int> map;\n    for (int i = 0; i < nums.size(); i++) {\n        map[nums[i]] = i;\n    }\n    for (int i = 0; i < nums.size(); i++) {\n        int complement = target - nums[i];\n        if (map.count(complement) && map[complement] != i) {\n            return {i, map[complement]};\n        }\n    }\n    return {};\n}`,
+          'python': `def twoSum(nums: list[int], target: int) -> list[int]:\n    val_map = {num: i for i, num in enumerate(nums)}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in val_map and val_map[complement] != i:\n            return [i, val_map[complement]]\n    return []`,
+        },
+      },
+    ];
+
+    const solutions = [
+      {
+        id: 'sol-1',
+        title: 'Clean One-Pass Hash Table in C++ / Python / Java with Step-by-Step Visualization',
+        author: 'alex_code',
+        upvotes: 1420,
+        tags: ['Array', 'Hash Table', 'Beginner Friendly'],
+        language: 'C++',
+        createdAt: '2 days ago',
+        preview: 'This solution uses a single pass over the numbers array with a hash table for O(n) runtime and O(n) memory. Here is how the lookup works with an example walk-through...',
+      },
+      {
+        id: 'sol-2',
+        title: 'Intuitive JavaScript Map Solution | Beats 99% Time',
+        author: 'frontend_ninja',
+        upvotes: 680,
+        tags: ['JavaScript', 'Hash Table'],
+        language: 'JavaScript',
+        createdAt: '5 days ago',
+        preview: 'Using ES6 Map provides high lookup performance without object prototype key pollution. Check out the clean 8-line solution...',
+      },
+      {
+        id: 'sol-3',
+        title: 'Memory-Efficient Python3 Dictionary Solution with Edge Cases Analysis',
+        author: 'py_algorithmist',
+        upvotes: 412,
+        tags: ['Python3', 'Algorithms'],
+        language: 'Python3',
+        createdAt: '1 week ago',
+        preview: 'We take advantage of Python dictionaries which are fast hash maps implemented in C. Note how duplicate elements are naturally handled...',
+      },
+    ];
+
+    return {
+      ...base,
+      isBookmarked: userBookmarks.has(base.id),
+      description: `Given an array of integers \`nums\` and an integer \`target\`, return *indices of the two numbers such that they add up to* \`target\`.\n\nYou may assume that each input would have ***exactly one solution***, and you may not use the *same* element twice.\n\nYou can return the answer in any order.`,
+      examples,
+      constraints,
+      hints,
+      followUp: 'Can you come up with an algorithm that is less than O(n²) time complexity?',
+      likes: votes.likes,
+      dislikes: votes.dislikes,
+      userVote: votes.userVote,
+      testCases,
+      starterCode,
+      editorial,
+      isEditorialLocked: false,
+      solutions,
+    };
+  },
+
+  /**
+   * GET /api/problems/:id/starter-code?lang=
+   */
+  async getStarterCode(problemId, lang = 'cpp') {
+    await new Promise((r) => setTimeout(r, 40));
+    const problem = await apiClient.getProblemBySlug(String(problemId));
+    return {
+      problemId: Number(problemId),
+      lang,
+      code: problem.starterCode[lang] || `// Write your ${lang} code here\n`,
+    };
+  },
+
+  /**
+   * GET /api/problems/:id/submissions
+   */
+  async getProblemSubmissions(problemId) {
+    await new Promise((r) => setTimeout(r, 60));
+    return [
+      {
+        id: 'sub-901',
+        problemId: Number(problemId),
+        problemTitle: 'Two Sum',
+        problemSlug: 'two-sum',
+        status: 'Accepted',
+        language: 'C++',
+        runtime: '4 ms',
+        memory: '10.4 MB',
+        submittedAt: '2026-10-15T14:22:00Z',
+        relativeTime: '18m ago',
+        code: `class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        unordered_map<int, int> seen;\n        for (int i = 0; i < nums.size(); ++i) {\n            int complement = target - nums[i];\n            if (seen.count(complement)) {\n                return {seen[complement], i};\n            }\n            seen[nums[i]] = i;\n        }\n        return {};\n    }\n};`,
+      },
+      {
+        id: 'sub-884',
+        problemId: Number(problemId),
+        problemTitle: 'Two Sum',
+        problemSlug: 'two-sum',
+        status: 'Wrong Answer',
+        language: 'Java',
+        runtime: '18 ms',
+        memory: '44.1 MB',
+        submittedAt: '2026-10-14T09:12:00Z',
+        relativeTime: 'Yesterday',
+        code: `class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        // Incomplete brute force\n        return new int[] { 0, 1 };\n    }\n}`,
+      },
+      {
+        id: 'sub-872',
+        problemId: Number(problemId),
+        problemTitle: 'Two Sum',
+        problemSlug: 'two-sum',
+        status: 'Accepted',
+        language: 'Python3',
+        runtime: '38 ms',
+        memory: '17.8 MB',
+        submittedAt: '2026-10-12T11:45:00Z',
+        relativeTime: '3d ago',
+        code: `class Solution:\n    def twoSum(self, nums: list[int], target: int) -> list[int]:\n        seen = {}\n        for i, num in enumerate(nums):\n            diff = target - num\n            if diff in seen:\n                return [seen[diff], i]\n            seen[num] = i\n        return []`,
+      },
+    ];
+  },
+
+  /**
+   * Judge In-Memory Submissions Tracker for async polling
+   */
+  _mockSubmissions: new Map(),
+
+  /**
+   * POST /api/problems/:id/run
+   */
+  async runCode({ problemId, lang, code, testcases }) {
+    await new Promise((r) => setTimeout(r, 60));
+    const submissionId = 'run_' + Math.random().toString(36).substring(2, 9);
+    apiClient._mockSubmissions.set(submissionId, {
+      id: submissionId,
+      problemId,
+      lang,
+      code,
+      testcases: testcases || [],
+      isSubmit: false,
+      createdAt: Date.now(),
+    });
+    return { submissionId };
+  },
+
+  /**
+   * POST /api/problems/:id/submit
+   */
+  async submitCode({ problemId, lang, code }) {
+    await new Promise((r) => setTimeout(r, 60));
+    const submissionId = 'sub_' + Math.random().toString(36).substring(2, 9);
+    apiClient._mockSubmissions.set(submissionId, {
+      id: submissionId,
+      problemId,
+      lang,
+      code,
+      isSubmit: true,
+      createdAt: Date.now(),
+    });
+    return { submissionId };
+  },
+
+  /**
+   * GET /api/submissions/:id
+   * Polls submission judge status with realistic cycle: Queued -> Running -> Accepted/WA
+   */
+  async getSubmissionStatus(submissionId) {
+    await new Promise((r) => setTimeout(r, 80));
+    const sub = apiClient._mockSubmissions.get(submissionId);
+    const now = Date.now();
+    const elapsed = sub ? now - sub.createdAt : 3000;
+
+    // Phase 1: Queued (< 700ms)
+    if (elapsed < 700) {
+      return {
+        submissionId,
+        status: 'Queued',
+        message: 'In queue...',
+        progress: 10,
+      };
+    }
+
+    // Phase 2: Running (700ms - 1700ms)
+    if (elapsed < 1700) {
+      const currentCase = elapsed < 1200 ? 1 : 2;
+      return {
+        submissionId,
+        status: 'Running',
+        message: `Running testcase ${currentCase} of 3...`,
+        progress: Math.min(80, Math.floor((elapsed / 1700) * 100)),
+      };
+    }
+
+    // Phase 3: Final evaluation result
+    const code = (sub?.code || '').trim();
+
+    // Syntax / compile error check
+    if (code.includes('syntax_error') || code.includes('compile_error')) {
+      return {
+        submissionId,
+        status: 'Compile Error',
+        compileError: 'Line 5: Char 12: error: expected \';\' before \'}\' token\n    5 |     return {}\n      |            ^',
+        errorLine: 5,
+        passedCases: 0,
+        totalCases: 3,
+      };
+    }
+
+    // Runtime error check
+    if (code.includes('throw') || code.includes('runtime_error')) {
+      return {
+        submissionId,
+        status: 'Runtime Error',
+        runtimeError: 'Line 8: Error: Vector out of range\n    at Solution.twoSum (solution.cpp:8:14)',
+        errorLine: 8,
+        passedCases: 1,
+        totalCases: 3,
+      };
+    }
+
+    // Wrong Answer check (if code returns empty or does not solve)
+    if (code.includes('return {}') || code.includes('return []') || code.includes('return nil') || code.length < 40) {
+      return {
+        submissionId,
+        status: 'Wrong Answer',
+        passedCases: 0,
+        totalCases: sub?.isSubmit ? 42 : 3,
+        failingCase: {
+          id: 'case-1',
+          input: 'nums = [2,7,11,15], target = 9',
+          expectedOutput: '[0,1]',
+          actualOutput: '[]',
+          stdout: '',
+        },
+        testResults: [
+          {
+            id: 'case-1',
+            input: 'nums = [2,7,11,15], target = 9',
+            expectedOutput: '[0,1]',
+            actualOutput: '[]',
+            isPassed: false,
+            stdout: '',
+          },
+          {
+            id: 'case-2',
+            input: 'nums = [3,2,4], target = 6',
+            expectedOutput: '[1,2]',
+            actualOutput: '[]',
+            isPassed: false,
+            stdout: '',
+          },
+        ],
+      };
+    }
+
+    // Accepted Success
+    return {
+      submissionId,
+      status: 'Accepted',
+      passedCases: sub?.isSubmit ? 42 : 3,
+      totalCases: sub?.isSubmit ? 42 : 3,
+      runtime: '4 ms',
+      memory: '10.4 MB',
+      runtimePercentile: 94.6,
+      memoryPercentile: 83.2,
+      stdout: sub?.code.includes('console.log') || sub?.code.includes('print') ? 'Processed elements: 4\nFound pair: 0, 1' : '',
+      testResults: [
+        {
+          id: 'case-1',
+          input: 'nums = [2,7,11,15], target = 9',
+          expectedOutput: '[0,1]',
+          actualOutput: '[0,1]',
+          isPassed: true,
+          stdout: '',
+        },
+        {
+          id: 'case-2',
+          input: 'nums = [3,2,4], target = 6',
+          expectedOutput: '[1,2]',
+          actualOutput: '[1,2]',
+          isPassed: true,
+          stdout: '',
+        },
+        {
+          id: 'case-3',
+          input: 'nums = [3,3], target = 6',
+          expectedOutput: '[0,1]',
+          actualOutput: '[0,1]',
+          isPassed: true,
+          stdout: '',
+        },
+      ],
+    };
+  },
+
+  /**
+   * POST /api/problems/:id/vote
+   */
+  async voteProblem(problemId, type) {
+    await new Promise((r) => setTimeout(r, 40));
+    const key = `codekro_vote_${problemId}`;
+    let votes = { likes: 14250, dislikes: 820, userVote: null };
+    try {
+      const stored = localStorage.getItem(key);
+      if (stored) votes = JSON.parse(stored);
+    } catch {
+      // fallback
+    }
+
+    if (votes.userVote === type) {
+      // Cancel vote
+      if (type === 'like') votes.likes -= 1;
+      if (type === 'dislike') votes.dislikes -= 1;
+      votes.userVote = null;
+    } else {
+      // Switch vote
+      if (votes.userVote === 'like') votes.likes -= 1;
+      if (votes.userVote === 'dislike') votes.dislikes -= 1;
+
+      if (type === 'like') votes.likes += 1;
+      if (type === 'dislike') votes.dislikes += 1;
+      votes.userVote = type;
+    }
+
+    try {
+      localStorage.setItem(key, JSON.stringify(votes));
+    } catch {
+      // ignore
+    }
+    return votes;
+  },
 };
+
