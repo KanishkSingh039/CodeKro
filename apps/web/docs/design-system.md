@@ -134,3 +134,23 @@ Difficulty labels are applied exclusively to small text pill elements:
   - `?`: Open keyboard shortcuts cheat sheet
   - `/`: Focus problem search / filter bar
 
+---
+
+## 6. User Profile & Settings Guidelines
+
+### Profile Layout Architecture (`/u/:username`)
+- **Desktop (≥1024px)**: 4/8 two-column split.
+  - Left (4 columns, sticky): 96px circular avatar with initials fallback, display name, `@username`, bio, filled external profile links (`rel="noopener noreferrer nofollow"`), global rank, contest rating, reputation stats, skills topic chips with counts, and language breakdown with solved bars.
+  - Right (8 columns): `SolvedOverview` with neutral ProgressRing, Easy/Medium/Hard rows (difficulty color strictly on labels), `ProfileHeatmap` (12-month calendar heatmap with green token shades, year dropdown, streaks), and tabbed views (`Recent Submissions`, `Solved Problems`, `Contests`, `Bookmarks`, `Badges`).
+- **Mobile (<1024px)**: Single column hierarchy (Identity -> Solved Overview -> Horizontally scrollable Heatmap -> Tabs).
+
+### Settings Architecture (`/settings/:tab`)
+- **Desktop (≥768px)**: Left navigation sidebar (`Profile`, `Account`, `Preferences`, `Privacy`, `Notifications`) + right form panel.
+- **Mobile (<768px)**: Top section selector dropdown + stacked form fields.
+- **Dirty State & Unsaved Alerts**: Save buttons are disabled until forms are dirty and valid. Window `beforeunload` and tab-switch confirmations protect against accidental data loss.
+- **Danger Zone**: Requires exact typed confirmation phrase (`"delete my account"`) before enabling account deletion.
+
+### AI-Evaluated Verdict Transparency
+- Because verdicts and resource profiles are judged asynchronously by AI evaluation workers, runtimes and memory allocations are captioned as **"estimated"** and tagged with an **"AI-evaluated"** badge.
+
+

@@ -1277,5 +1277,469 @@ export const apiClient = {
     }
     return votes;
   },
+
+  /**
+   * Profile & Settings in-memory data store with localStorage sync
+   */
+  _mockProfiles: {
+    kanishk: {
+      id: 'usr_kanishk01',
+      username: 'kanishk',
+      name: 'Kanishk Singh',
+      email: 'kanishk@codekro.dev',
+      avatarUrl: '',
+      bio: 'Algorithms engineer building fast competitive coding workspaces.',
+      location: 'Bangalore, India',
+      organization: 'CodeKro Engineering',
+      website: 'https://kanishksingh.dev',
+      github: 'KanishkSingh039',
+      linkedin: 'https://linkedin.com/in/kanishk-singh',
+      globalRank: 14290,
+      contestRating: 1842,
+      reputation: 340,
+      followersCount: 128,
+      followingCount: 42,
+      joinedDate: 'January 2024',
+      lastActive: 'Today',
+      isOwner: true,
+      isPrivate: false,
+      skills: [
+        { topic: 'Array', count: 82 },
+        { topic: 'Hash Table', count: 64 },
+        { topic: 'Dynamic Programming', count: 42 },
+        { topic: 'Two Pointers', count: 38 },
+        { topic: 'Tree', count: 29 },
+        { topic: 'String', count: 26 },
+        { topic: 'Binary Search', count: 21 },
+        { topic: 'Graph', count: 18 },
+      ],
+      languages: [
+        { language: 'C++', count: 142 },
+        { language: 'Python3', count: 88 },
+        { language: 'JavaScript', count: 36 },
+        { language: 'Go', count: 18 },
+      ],
+    },
+    tourist: {
+      id: 'usr_tourist',
+      username: 'tourist',
+      name: 'Gennady Korotkevich',
+      email: '',
+      avatarUrl: '',
+      bio: 'Competitive programmer. Multiple ACM-ICPC and Google Code Jam champion.',
+      location: 'Gomel, Belarus',
+      organization: 'ITMO University',
+      website: 'https://codeforces.com/profile/tourist',
+      github: 'tourist',
+      linkedin: '',
+      globalRank: 1,
+      contestRating: 3842,
+      reputation: 19400,
+      followersCount: 15420,
+      followingCount: 12,
+      joinedDate: 'March 2022',
+      lastActive: '2 hours ago',
+      isOwner: false,
+      isPrivate: false,
+      skills: [
+        { topic: 'Dynamic Programming', count: 450 },
+        { topic: 'Graph', count: 390 },
+        { topic: 'Data Structures', count: 340 },
+        { topic: 'Math', count: 310 },
+        { topic: 'Tree', count: 280 },
+      ],
+      languages: [
+        { language: 'C++', count: 2200 },
+        { language: 'Java', count: 180 },
+        { language: 'Python3', count: 40 },
+      ],
+    },
+    private_dev: {
+      id: 'usr_privatedev',
+      username: 'private_dev',
+      name: 'Private Developer',
+      email: '',
+      avatarUrl: '',
+      bio: 'Stealth developer practicing coding privately.',
+      location: 'Remote',
+      organization: 'Stealth Corp',
+      website: '',
+      github: '',
+      linkedin: '',
+      globalRank: 42100,
+      contestRating: 1540,
+      reputation: 80,
+      followersCount: 4,
+      followingCount: 1,
+      joinedDate: 'June 2024',
+      lastActive: '3 days ago',
+      isOwner: false,
+      isPrivate: true,
+      skills: [],
+      languages: [],
+    },
+  },
+
+  _mockPreferences: {
+    defaultLanguage: 'cpp',
+    editorFontSize: 14,
+    tabSize: 4,
+    keybindings: 'default',
+    theme: 'dark',
+    timezone: 'Asia/Kolkata',
+  },
+
+  _mockPrivacy: {
+    publicProfile: true,
+    showHeatmap: true,
+    showSubmissions: true,
+    showSolved: true,
+    showContests: true,
+  },
+
+  _mockNotifications: {
+    contestReminders: true,
+    dailyProblem: true,
+    submissionFeedback: true,
+    productUpdates: false,
+  },
+
+  /**
+   * GET /api/users/:username
+   */
+  async getUserProfile(username) {
+    await new Promise((r) => setTimeout(r, 70));
+    const normalized = (username || '').toLowerCase();
+    const currentSessionUser = 'kanishk';
+
+    // Check if edited profile exists in localStorage
+    let stored = null;
+    try {
+      const raw = localStorage.getItem(`codekro_profile_${normalized}`);
+      if (raw) stored = JSON.parse(raw);
+    } catch {
+      // ignore
+    }
+
+    const base = stored || apiClient._mockProfiles[normalized];
+
+    if (!base) {
+      const err = new Error(`User "${username}" not found`);
+      err.status = 404;
+      throw err;
+    }
+
+    return {
+      ...base,
+      isOwner: normalized === currentSessionUser,
+    };
+  },
+
+  /**
+   * GET /api/users/:username/badges
+   */
+  async getUserBadges(_username) {
+    await new Promise((r) => setTimeout(r, 50));
+    return [
+      {
+        id: 'badge-50-days',
+        name: '50 Days Badge 2024',
+        description: 'Solved at least one problem for 50 distinct calendar days in 2024.',
+        criteria: '50 active days in 2024',
+        earnedDate: '2024-04-18',
+        progress: 50,
+        maxProgress: 50,
+        category: 'streak',
+      },
+      {
+        id: 'badge-100-days',
+        name: '100 Days Badge 2024',
+        description: 'Solved at least one problem for 100 distinct calendar days in 2024.',
+        criteria: '100 active days in 2024',
+        earnedDate: '2024-08-25',
+        progress: 100,
+        maxProgress: 100,
+        category: 'streak',
+      },
+      {
+        id: 'badge-knight',
+        name: 'Knight Rating',
+        description: 'Achieved contest rating equal to or above 1850.',
+        criteria: 'Rating >= 1850 in Rated Contests',
+        earnedDate: null,
+        progress: 1842,
+        maxProgress: 1850,
+        category: 'contest',
+      },
+      {
+        id: 'badge-dp-master',
+        name: 'Dynamic Programming Specialist',
+        description: 'Solved 50 Medium or Hard Dynamic Programming challenges.',
+        criteria: '50 DP problems solved',
+        earnedDate: null,
+        progress: 42,
+        maxProgress: 50,
+        category: 'skill',
+      },
+      {
+        id: 'badge-first-contest',
+        name: 'Contest Pioneer',
+        description: 'Participated and scored in first rated contest.',
+        criteria: 'Participate in 1 rated contest',
+        earnedDate: '2024-02-14',
+        progress: 1,
+        maxProgress: 1,
+        category: 'contest',
+      },
+    ];
+  },
+
+  /**
+   * GET /api/users/:username/contests
+   */
+  async getUserContests(_username) {
+    await new Promise((r) => setTimeout(r, 60));
+    return {
+      currentRating: 1842,
+      maxRating: 1890,
+      globalRank: 4210,
+      totalContests: 14,
+      history: [
+        { id: 'c-390', contestName: 'Weekly Contest 390', rank: 1420, ratingChange: 28, newRating: 1680, date: '2024-03-24' },
+        { id: 'c-393', contestName: 'Weekly Contest 393', rank: 940, ratingChange: 42, newRating: 1722, date: '2024-04-14' },
+        { id: 'c-128', contestName: 'Biweekly Contest 128', rank: 1100, ratingChange: -12, newRating: 1710, date: '2024-04-27' },
+        { id: 'c-398', contestName: 'Weekly Contest 398', rank: 680, ratingChange: 54, newRating: 1764, date: '2024-05-19' },
+        { id: 'c-131', contestName: 'Biweekly Contest 131', rank: 810, ratingChange: 32, newRating: 1796, date: '2024-06-08' },
+        { id: 'c-402', contestName: 'Weekly Contest 402', rank: 540, ratingChange: 46, newRating: 1842, date: '2024-06-30' },
+        { id: 'c-405', contestName: 'Weekly Contest 405', rank: 410, ratingChange: 48, newRating: 1890, date: '2024-07-21' },
+        { id: 'c-134', contestName: 'Biweekly Contest 134', rank: 920, ratingChange: -48, newRating: 1842, date: '2024-08-03' },
+      ],
+    };
+  },
+
+  /**
+   * GET /api/users/:username/solved?filters
+   */
+  async getUserSolved(_username, filters = {}) {
+    await new Promise((r) => setTimeout(r, 60));
+    const { difficulty = 'all', tag = 'all', lang = 'all' } = filters;
+
+    let solved = rawProblems.filter((p) => p.status === 'solved').map((p) => ({
+      id: p.id,
+      frontendQuestionId: p.frontendQuestionId,
+      title: p.title,
+      titleSlug: p.titleSlug,
+      difficulty: p.difficulty,
+      topicTags: p.topicTags,
+      language: p.id % 2 === 0 ? 'C++' : 'Python3',
+      firstSolvedDate: '2024-05-12',
+    }));
+
+    if (difficulty !== 'all') {
+      solved = solved.filter((s) => s.difficulty.toLowerCase() === difficulty.toLowerCase());
+    }
+    if (tag !== 'all') {
+      solved = solved.filter((s) => s.topicTags.some((t) => t.toLowerCase() === tag.toLowerCase()));
+    }
+    if (lang !== 'all') {
+      solved = solved.filter((s) => s.language.toLowerCase() === lang.toLowerCase());
+    }
+
+    return solved;
+  },
+
+  /**
+   * GET /api/users/:username/submissions?page&limit
+   */
+  async getUserSubmissions(_username, page = 1, limit = 20) {
+    await new Promise((r) => setTimeout(r, 60));
+    // Full recent list of submissions with AI-evaluated note
+    const baseList = [
+      { id: 'sub-101', problemTitle: 'Two Sum', problemSlug: 'two-sum', status: 'Accepted', language: 'C++', relativeTime: '18m ago', submittedAt: '2026-10-18T00:10:00Z', isAiEvaluated: true },
+      { id: 'sub-102', problemTitle: 'Trapping Rain Water', problemSlug: 'trapping-rain-water', status: 'Time Limit Exceeded', language: 'Python3', relativeTime: '2h ago', submittedAt: '2026-10-17T22:30:00Z', isAiEvaluated: true },
+      { id: 'sub-103', problemTitle: 'Reverse Linked List', problemSlug: 'reverse-linked-list', status: 'Accepted', language: 'Go', relativeTime: '5h ago', submittedAt: '2026-10-17T19:00:00Z', isAiEvaluated: true },
+      { id: 'sub-104', problemTitle: '3Sum', problemSlug: '3sum', status: 'Wrong Answer', language: 'Java', relativeTime: 'Yesterday', submittedAt: '2026-10-16T15:20:00Z', isAiEvaluated: true },
+      { id: 'sub-105', problemTitle: 'LRU Cache', problemSlug: 'lru-cache', status: 'Accepted', language: 'C++', relativeTime: '2d ago', submittedAt: '2026-10-15T12:00:00Z', isAiEvaluated: true },
+      { id: 'sub-106', problemTitle: 'Valid Parentheses', problemSlug: 'valid-parentheses', status: 'Accepted', language: 'C++', relativeTime: '3d ago', submittedAt: '2026-10-14T09:40:00Z', isAiEvaluated: true },
+      { id: 'sub-107', problemTitle: 'Merge Two Sorted Lists', problemSlug: 'merge-two-sorted-lists', status: 'Accepted', language: 'Python3', relativeTime: '4d ago', submittedAt: '2026-10-13T17:15:00Z', isAiEvaluated: true },
+      { id: 'sub-108', problemTitle: 'Search in Rotated Sorted Array', problemSlug: 'search-in-rotated-sorted-array', status: 'Accepted', language: 'C++', relativeTime: '5d ago', submittedAt: '2026-10-12T11:20:00Z', isAiEvaluated: true },
+      { id: 'sub-109', problemTitle: 'Group Anagrams', problemSlug: 'group-anagrams', status: 'Accepted', language: 'Python3', relativeTime: '6d ago', submittedAt: '2026-10-11T14:00:00Z', isAiEvaluated: true },
+      { id: 'sub-110', problemTitle: 'Maximum Subarray', problemSlug: 'maximum-subarray', status: 'Accepted', language: 'C++', relativeTime: '1w ago', submittedAt: '2026-10-10T16:50:00Z', isAiEvaluated: true },
+      { id: 'sub-111', problemTitle: 'Binary Tree Level Order Traversal', problemSlug: 'binary-tree-level-order-traversal', status: 'Accepted', language: 'Java', relativeTime: '1w ago', submittedAt: '2026-10-09T18:30:00Z', isAiEvaluated: true },
+      { id: 'sub-112', problemTitle: 'Climbing Stairs', problemSlug: 'climbing-stairs', status: 'Accepted', language: 'C++', relativeTime: '1w ago', submittedAt: '2026-10-08T08:15:00Z', isAiEvaluated: true },
+      { id: 'sub-113', problemTitle: 'Container With Most Water', problemSlug: 'container-with-most-water', status: 'Accepted', language: 'C++', relativeTime: '1w ago', submittedAt: '2026-10-07T13:45:00Z', isAiEvaluated: true },
+      { id: 'sub-114', problemTitle: 'Best Time to Buy and Sell Stock', problemSlug: 'best-time-to-buy-and-sell-stock', status: 'Accepted', language: 'Python3', relativeTime: '2w ago', submittedAt: '2026-10-04T10:00:00Z', isAiEvaluated: true },
+      { id: 'sub-115', problemTitle: 'Word Break', problemSlug: 'word-break', status: 'Wrong Answer', language: 'C++', relativeTime: '2w ago', submittedAt: '2026-10-03T11:20:00Z', isAiEvaluated: true },
+      { id: 'sub-116', problemTitle: 'Product of Array Except Self', problemSlug: 'product-of-array-except-self', status: 'Accepted', language: 'Go', relativeTime: '2w ago', submittedAt: '2026-10-02T14:10:00Z', isAiEvaluated: true },
+      { id: 'sub-117', problemTitle: 'Coin Change', problemSlug: 'coin-change', status: 'Accepted', language: 'C++', relativeTime: '2w ago', submittedAt: '2026-10-01T20:30:00Z', isAiEvaluated: true },
+      { id: 'sub-118', problemTitle: 'Top K Frequent Elements', problemSlug: 'top-k-frequent-elements', status: 'Accepted', language: 'Python3', relativeTime: '3w ago', submittedAt: '2026-09-28T19:00:00Z', isAiEvaluated: true },
+      { id: 'sub-119', problemTitle: 'Number of Islands', problemSlug: 'number-of-islands', status: 'Accepted', language: 'C++', relativeTime: '3w ago', submittedAt: '2026-09-26T16:20:00Z', isAiEvaluated: true },
+      { id: 'sub-120', problemTitle: 'Course Schedule', problemSlug: 'course-schedule', status: 'Runtime Error', language: 'Java', relativeTime: '3w ago', submittedAt: '2026-09-25T15:00:00Z', isAiEvaluated: true },
+      { id: 'sub-121', problemTitle: 'Longest Consecutive Sequence', problemSlug: 'longest-consecutive-sequence', status: 'Accepted', language: 'C++', relativeTime: '4w ago', submittedAt: '2026-09-20T12:00:00Z', isAiEvaluated: true },
+      { id: 'sub-122', problemTitle: 'Kth Largest Element in an Array', problemSlug: 'kth-largest-element-in-an-array', status: 'Accepted', language: 'Python3', relativeTime: '1mo ago', submittedAt: '2026-09-18T10:00:00Z', isAiEvaluated: true },
+    ];
+
+    const total = baseList.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const validPage = Math.min(Math.max(1, Number(page)), totalPages);
+    const start = (validPage - 1) * limit;
+    const items = baseList.slice(start, start + limit);
+
+    return {
+      submissions: items,
+      total,
+      page: validPage,
+      totalPages,
+    };
+  },
+
+  /**
+   * GET /api/users/:username/bookmarks
+   */
+  async getUserBookmarks(_username) {
+    await new Promise((r) => setTimeout(r, 50));
+    return rawProblems.filter((p) => userBookmarks.has(p.id));
+  },
+
+  /**
+   * Settings: GET /api/me/preferences
+   */
+  async getPreferences() {
+    await new Promise((r) => setTimeout(r, 40));
+    try {
+      const stored = localStorage.getItem('codekro_preferences');
+      if (stored) return JSON.parse(stored);
+    } catch {
+      // ignore
+    }
+    return apiClient._mockPreferences;
+  },
+
+  /**
+   * Settings: PATCH /api/me/preferences
+   */
+  async updatePreferences(data) {
+    await new Promise((r) => setTimeout(r, 80));
+    try {
+      localStorage.setItem('codekro_preferences', JSON.stringify(data));
+    } catch {
+      // ignore
+    }
+    return { success: true, preferences: data };
+  },
+
+  /**
+   * Settings: GET /api/me/privacy
+   */
+  async getPrivacy() {
+    await new Promise((r) => setTimeout(r, 40));
+    try {
+      const stored = localStorage.getItem('codekro_privacy');
+      if (stored) return JSON.parse(stored);
+    } catch {
+      // ignore
+    }
+    return apiClient._mockPrivacy;
+  },
+
+  /**
+   * Settings: PATCH /api/me/privacy
+   */
+  async updatePrivacy(data) {
+    await new Promise((r) => setTimeout(r, 80));
+    try {
+      localStorage.setItem('codekro_privacy', JSON.stringify(data));
+    } catch {
+      // ignore
+    }
+    return { success: true, privacy: data };
+  },
+
+  /**
+   * Settings: GET /api/me/notifications
+   */
+  async getNotifications() {
+    await new Promise((r) => setTimeout(r, 40));
+    try {
+      const stored = localStorage.getItem('codekro_notifications');
+      if (stored) return JSON.parse(stored);
+    } catch {
+      // ignore
+    }
+    return apiClient._mockNotifications;
+  },
+
+  /**
+   * Settings: PATCH /api/me/notifications
+   */
+  async updateNotifications(data) {
+    await new Promise((r) => setTimeout(r, 80));
+    try {
+      localStorage.setItem('codekro_notifications', JSON.stringify(data));
+    } catch {
+      // ignore
+    }
+    return { success: true, notifications: data };
+  },
+
+  /**
+   * Settings: PATCH /api/me/profile
+   */
+  async updateProfile(data) {
+    await new Promise((r) => setTimeout(r, 100));
+    const current = apiClient._mockProfiles.kanishk;
+    const updated = { ...current, ...data };
+    apiClient._mockProfiles.kanishk = updated;
+    try {
+      localStorage.setItem('codekro_profile_kanishk', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    return { success: true, profile: updated };
+  },
+
+  /**
+   * Settings: Check username availability
+   */
+  async checkUsernameAvailable(username) {
+    await new Promise((r) => setTimeout(r, 90));
+    const lower = (username || '').toLowerCase();
+    const taken = ['tourist', 'admin', 'root', 'codekro', 'system'];
+    if (lower === 'kanishk') return { available: true };
+    return { available: !taken.includes(lower) };
+  },
+
+  /**
+   * Settings: POST /api/me/avatar
+   */
+  async uploadAvatar(fileDataUrl) {
+    await new Promise((r) => setTimeout(r, 120));
+    return { success: true, avatarUrl: fileDataUrl };
+  },
+
+  /**
+   * Settings: POST /api/me/password
+   */
+  async changePassword(oldPassword, _newPassword) {
+    await new Promise((r) => setTimeout(r, 100));
+    if (oldPassword === 'wrong') {
+      const err = new Error('Current password does not match.');
+      throw err;
+    }
+    return { success: true, message: 'Password updated successfully.' };
+  },
+
+  /**
+   * Settings: DELETE /api/me
+   */
+  async deleteAccount(confirmationPhrase) {
+    await new Promise((r) => setTimeout(r, 120));
+    if (confirmationPhrase !== 'delete my account') {
+      const err = new Error('Confirmation phrase is incorrect.');
+      throw err;
+    }
+    return { success: true, message: 'Account deleted.' };
+  },
 };
+
 

@@ -216,27 +216,39 @@ export default function AppLayout({
                     <p className="text-[11px] text-text-muted truncate">{user.email}</p>
                   </div>
                   <div className="py-1">
-                    <a
-                      href="#profile"
-                      className="flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover"
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        if (onRouteChange) onRouteChange('profile');
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover text-left cursor-pointer"
                     >
                       <User className="w-3.5 h-3.5" />
                       <span>Profile</span>
-                    </a>
-                    <a
-                      href="#submissions"
-                      className="flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover"
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        if (onRouteChange) onRouteChange('profile', 'submissions');
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover text-left cursor-pointer"
                     >
                       <History className="w-3.5 h-3.5" />
                       <span>Submissions</span>
-                    </a>
-                    <a
-                      href="#settings"
-                      className="flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover"
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        if (onRouteChange) onRouteChange('settings');
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover text-left cursor-pointer"
                     >
                       <Settings className="w-3.5 h-3.5" />
                       <span>Settings</span>
-                    </a>
+                    </button>
                   </div>
                   <div className="border-t border-border-subtle pt-1 mt-1">
                     <button

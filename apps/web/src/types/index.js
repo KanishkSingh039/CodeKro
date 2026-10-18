@@ -95,16 +95,6 @@
  */
 
 /**
- * @typedef {Object} UserProfile
- * @property {string} id
- * @property {string} username
- * @property {string} name
- * @property {string} email
- * @property {string} [avatarUrl]
- * @property {{ id: number; title: string; titleSlug: string; difficulty: DifficultyLevel } | null} [lastAttemptedProblem]
- */
-
-/**
  * @typedef {Object} ProblemFilters
  * @property {number} page
  * @property {number} limit
@@ -206,5 +196,81 @@
  * @property {TestCase} [failingCase]
  */
 
+/**
+ * @typedef {Object} UserProfile
+ * @property {string} id
+ * @property {string} username
+ * @property {string} name
+ * @property {string} [email]
+ * @property {string} [avatarUrl]
+ * @property {string} [bio]
+ * @property {string} [location]
+ * @property {string} [organization]
+ * @property {string} [website]
+ * @property {string} [github]
+ * @property {string} [linkedin]
+ * @property {number} globalRank
+ * @property {number} contestRating
+ * @property {number} reputation
+ * @property {number} [followersCount]
+ * @property {number} [followingCount]
+ * @property {string} joinedDate
+ * @property {string} lastActive
+ * @property {{ topic: string; count: number }[]} skills
+ * @property {{ language: string; count: number }[]} languages
+ * @property {boolean} isOwner
+ * @property {boolean} isPrivate
+ */
+
+/**
+ * @typedef {Object} ContestResult
+ * @property {string} id
+ * @property {string} contestName
+ * @property {number} rank
+ * @property {number} ratingChange
+ * @property {number} newRating
+ * @property {string} date
+ */
+
+/**
+ * @typedef {Object} Badge
+ * @property {string} id
+ * @property {string} name
+ * @property {string} description
+ * @property {string} criteria
+ * @property {string | null} earnedDate
+ * @property {number} progress
+ * @property {number} maxProgress
+ * @property {string} category
+ */
+
+/**
+ * @typedef {Object} UserPreferences
+ * @property {string} defaultLanguage
+ * @property {number} editorFontSize
+ * @property {number} tabSize
+ * @property {'default' | 'vim'} keybindings
+ * @property {'dark' | 'light' | 'system'} theme
+ * @property {string} timezone
+ */
+
+/**
+ * @typedef {Object} PrivacySettings
+ * @property {boolean} publicProfile
+ * @property {boolean} showHeatmap
+ * @property {boolean} showSubmissions
+ * @property {boolean} showSolved
+ * @property {boolean} showContests
+ */
+
+/**
+ * @typedef {Object} NotificationSettings
+ * @property {boolean} contestReminders
+ * @property {boolean} dailyProblem
+ * @property {boolean} submissionFeedback
+ * @property {boolean} productUpdates
+ */
+
 export {};
+
 

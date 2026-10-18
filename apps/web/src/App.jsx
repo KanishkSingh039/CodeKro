@@ -5,6 +5,8 @@ import AuthLayout from './layouts/AuthLayout';
 import AuthCard from './features/auth/AuthCard';
 import DashboardView from './features/dashboard/DashboardView';
 import ProblemWorkspace from './features/problem/ProblemWorkspace';
+import ProfileView from './features/profile/ProfileView';
+import SettingsView from './features/profile/SettingsView';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,20 +23,33 @@ export default function App() {
     const pathname = window.location.pathname;
     const params = new URLSearchParams(window.location.search);
 
+    // Route: /u/:username
+    if (pathname.startsWith('/u/')) {
+      const username = pathname.replace('/u/', '').replace(/\/$/, '') || 'kanishk';
+      return { route: 'profile', username, slug: 'two-sum', tab: 'login', settingsTab: 'profile' };
+    }
+
+    // Route: /settings/:tab
+    if (pathname.startsWith('/settings')) {
+      const parts = pathname.split('/').filter(Boolean);
+      const settingsTab = parts[1] || 'profile';
+      return { route: 'settings', username: 'kanishk', slug: 'two-sum', tab: 'login', settingsTab };
+    }
+
     // Route: /problems/:slug
     if (pathname.startsWith('/problems/')) {
       const slug = pathname.replace('/problems/', '').replace(/\/$/, '') || 'two-sum';
-      return { route: 'problem', slug, tab: 'login' };
+      return { route: 'problem', username: 'kanishk', slug, tab: 'login', settingsTab: 'profile' };
     }
 
     // Route: /dashboard
     if (pathname === '/dashboard') {
-      return { route: 'dashboard', slug: 'two-sum', tab: 'login' };
+      return { route: 'dashboard', username: 'kanishk', slug: 'two-sum', tab: 'login', settingsTab: 'profile' };
     }
 
     // Default: / redirects to auth (login/register)
     const tab = pathname === '/register' || params.get('tab') === 'register' ? 'register' : 'login';
-    return { route: 'auth', slug: 'two-sum', tab };
+    return { route: 'auth', username: 'kanishk', slug: 'two-sum', tab, settingsTab: 'profile' };
   };
 
   const getInitialTheme = () => {
@@ -44,8 +59,10 @@ export default function App() {
 
   const initial = parseCurrentLocation();
   const [currentRoute, setCurrentRoute] = useState(initial.route);
+  const [targetUsername, setTargetUsername] = useState(initial.username || 'kanishk');
   const [problemSlug, setProblemSlug] = useState(initial.slug);
   const [activeAuthTab, setActiveAuthTab] = useState(initial.tab);
+  const [settingsTab, setSettingsTab] = useState(initial.settingsTab || 'profile');
   const [theme, setTheme] = useState(getInitialTheme);
 
   // Sync theme with data-theme attribute on root element
@@ -65,8 +82,10 @@ export default function App() {
     const handlePopState = () => {
       const loc = parseCurrentLocation();
       setCurrentRoute(loc.route);
+      setTargetUsername(loc.username || 'kanishk');
       setProblemSlug(loc.slug);
       setActiveAuthTab(loc.tab);
+      setSettingsTab(loc.settingsTab || 'profile');
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -80,8 +99,10 @@ export default function App() {
     window.history.pushState(null, '', path);
     const loc = parseCurrentLocation();
     setCurrentRoute(loc.route);
+    setTargetUsername(loc.username || 'kanishk');
     setProblemSlug(loc.slug);
     setActiveAuthTab(loc.tab);
+    setSettingsTab(loc.settingsTab || 'profile');
   };
 
   return (
@@ -97,13 +118,70 @@ export default function App() {
         />
       )}
 
-      {/* 2. Dashboard Route: /dashboard */}
+      {/* 2. Public / Owner Profile Route: /u/:username */}
+      {currentRoute === 'profile' && (
+        <AppLayout
+          currentRoute="profile"
+          onRouteChange={(dest) => {
+            if (dest === 'auth') {
+              navigateTo('/login');
+            } else if (dest === 'settings') {
+              navigateTo('/settings/profile');
+            } else if (dest === 'profile') {
+              navigateTo('/u/kanishk');
+            } else {
+              navigateTo('/dashboard');
+            }
+          }}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        >
+          <ProfileView
+            username={targetUsername}
+            onNavigateSettings={() => navigateTo('/settings/profile')}
+            onNavigateProblem={(slug) => navigateTo(`/problems/${slug}`)}
+            onBackToDashboard={() => navigateTo('/dashboard')}
+          />
+        </AppLayout>
+      )}
+
+      {/* 3. Settings Route: /settings/profile */}
+      {currentRoute === 'settings' && (
+        <AppLayout
+          currentRoute="settings"
+          onRouteChange={(dest) => {
+            if (dest === 'auth') {
+              navigateTo('/login');
+            } else if (dest === 'profile') {
+              navigateTo('/u/kanishk');
+            } else if (dest === 'settings') {
+              navigateTo('/settings/profile');
+            } else {
+              navigateTo('/dashboard');
+            }
+          }}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        >
+          <SettingsView
+            initialTab={settingsTab}
+            onBackToProfile={() => navigateTo('/u/kanishk')}
+            onAccountDeleted={() => navigateTo('/login')}
+          />
+        </AppLayout>
+      )}
+
+      {/* 4. Dashboard Route: /dashboard */}
       {currentRoute === 'dashboard' && (
         <AppLayout
           currentRoute="dashboard"
           onRouteChange={(dest) => {
             if (dest === 'auth') {
               navigateTo('/login');
+            } else if (dest === 'profile') {
+              navigateTo('/u/kanishk');
+            } else if (dest === 'settings') {
+              navigateTo('/settings/profile');
             } else {
               navigateTo('/dashboard');
             }
@@ -120,7 +198,7 @@ export default function App() {
         </AppLayout>
       )}
 
-      {/* 3. Auth Route: /login, /register, and root / */}
+      {/* 5. Auth Route: /login, /register, and root / */}
       {currentRoute === 'auth' && (
         <AuthLayout theme={theme} onToggleTheme={toggleTheme}>
           <AuthCard
@@ -136,3 +214,4 @@ export default function App() {
     </QueryClientProvider>
   );
 }
+
