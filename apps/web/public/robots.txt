@@ -1,0 +1,11 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+Allow: /problems
+Allow: /problems/*
+Allow: /u/*
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /settings/*
+
+Sitemap: https://codekro.dev/sitemap.xml

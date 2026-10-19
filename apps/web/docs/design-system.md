@@ -11,10 +11,10 @@ A restrained, developer-first design system inspired by LeetCode's minimalist fo
    - Primary action buttons
    - Interactive links and tab indicators
    - Focus rings (`:focus-visible`)
-   - Success state confirmations
+   - Success state confirmations & Accepted verdicts in product previews
    *Nothing else uses green.*
-3. **Honest Copy**: Avoid marketing hype and unprovable claims. Plain, factual descriptions for developers.
-4. **Accessible by Default**: Semantic HTML, visible focus indicators, `aria-invalid` / `aria-describedby` integration on forms, WCAG AA color contrast, and respect for `prefers-reduced-motion`.
+3. **Honest Copy**: Avoid marketing hype, buzzwords ("next-generation", "zero-latency", "microsecond", "revolutionary"), and unprovable numbers. Plain, factual descriptions for developers.
+4. **Accessible by Default**: Semantic HTML, visible focus indicators, `aria-invalid` / `aria-describedby` integration on forms, accessible accordion controls with `aria-expanded`, WCAG AA color contrast, and respect for `prefers-reduced-motion`.
 
 ---
 
@@ -26,8 +26,8 @@ Design tokens are defined as CSS Custom Properties in `src/index.css` and mapped
 
 | Token | Dark (Default) | Light | Usage |
 |---|---|---|---|
-| `--bg-base` | `#0B1217` | `#F7F9FA` | Page root background |
-| `--bg-surface` | `#111A21` | `#FFFFFF` | Primary cards, panels, headers |
+| `--bg-base` | `#0B1217` | `#F7F9FA` | Page root background, alternating landing sections |
+| `--bg-surface` | `#111A21` | `#FFFFFF` | Primary cards, panels, headers, alternating landing sections |
 | `--bg-surface-subtle` | `#16222B` | `#F0F3F5` | Segmented controls, subtle header bars |
 | `--bg-surface-hover` | `#1A2833` | `#E4E8EC` | Button & list item hover states |
 | `--bg-input` | `#0E161C` | `#FFFFFF` | Input field background |
@@ -44,7 +44,7 @@ Design tokens are defined as CSS Custom Properties in `src/index.css` and mapped
 ### Typography
 
 - **UI Sans**: `Inter`, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif
-- **Code Mono**: `JetBrains Mono`, monospace (used only for code editor snippets and terminal outputs)
+- **Code Mono**: `JetBrains Mono`, monospace (used for code editor snippets, numbers, and stats)
 
 ### Radius & Spacing
 
@@ -91,13 +91,12 @@ Supports `primary`, `secondary`, and `ghost` variants across `sm`, `md`, and `lg
 
 ## 4. Layout Architecture
 
-- **`AuthLayout`**: Split-screen 2-column layout on desktop (short value proposition on the left, centered 420px card on the right); single-column on mobile.
+- **`AuthLayout`**: Split-screen 2-column layout on desktop; single-column on mobile.
 - **`AppLayout`**: Reusable dashboard shell with header, optional sidebar slot, and main content area for Problems, Contests, and Profile pages.
-- **`ProblemLayout`**: Dedicated full-height distraction-free workspace (`/problems/:slug`):
-  - Desktop: Resizable horizontal split view (Left: 45% problem tabs, Right: 55% editor & console). Draggable divider with keyboard arrows support (`aria-valuenow`, `aria-valuemin`, `aria-valuemax`). Right pane splits vertically into Monaco Editor (65%) and test/console panel (35%). Remembers layout dimensions in `localStorage`.
-  - Mobile (<1024px): Single-column workspace with segmented switcher (`Description` | `Code` | `Results`) and a sticky bottom Run/Submit bar.
+- **`ProblemLayout`**: Dedicated full-height distraction-free workspace (`/problems/:slug`).
+- **`LandingView`**: Public landing page shell coordinating the 10 core sections for signed-out visitors.
 - **Centralized Copy (`src/constants/copy.js`)**: All user-facing strings are decoupled from JSX markup for maintainability and scalability.
-- **API Stub (`src/lib/api.js`)**: Isolated backend contract ready for endpoint integration without touching backend code.
+- **API Client (`src/lib/api.js`)**: Isolated backend contract ready for endpoint integration without touching backend code.
 
 ---
 
@@ -124,33 +123,50 @@ Difficulty labels are applied exclusively to small text pill elements:
 - **Medium**: Amber (`#FFA116`)
 - **Hard**: Coral Red (`#FF6B6B`)
 
-### Split Pane Accessibility & Keyboard Escapes
-
-- **Dividers**: Fully keyboard operable using Arrow keys (`ArrowLeft`, `ArrowRight`, `ArrowUp`, `ArrowDown`) with `Home` and `End` keys to reset or snap panes.
-- **Monaco Focus Trap Escape**: Press `Esc` then `Tab` to escape Monaco Editor's internal tab capture and resume normal page DOM tab navigation.
-- **Keyboard Shortcuts**:
-  - `Ctrl/Cmd + '`: Run sample test cases
-  - `Ctrl/Cmd + Enter`: Submit solution to judge queue
-  - `?`: Open keyboard shortcuts cheat sheet
-  - `/`: Focus problem search / filter bar
-
 ---
 
 ## 6. User Profile & Settings Guidelines
 
 ### Profile Layout Architecture (`/u/:username`)
 - **Desktop (≥1024px)**: 4/8 two-column split.
-  - Left (4 columns, sticky): 96px circular avatar with initials fallback, display name, `@username`, bio, filled external profile links (`rel="noopener noreferrer nofollow"`), global rank, contest rating, reputation stats, skills topic chips with counts, and language breakdown with solved bars.
-  - Right (8 columns): `SolvedOverview` with neutral ProgressRing, Easy/Medium/Hard rows (difficulty color strictly on labels), `ProfileHeatmap` (12-month calendar heatmap with green token shades, year dropdown, streaks), and tabbed views (`Recent Submissions`, `Solved Problems`, `Contests`, `Bookmarks`, `Badges`).
-- **Mobile (<1024px)**: Single column hierarchy (Identity -> Solved Overview -> Horizontally scrollable Heatmap -> Tabs).
+- **Mobile (<1024px)**: Single column hierarchy.
+- **AI-Evaluated Verdict Transparency**: Runtimes and memory allocations are captioned as **"estimated"** and tagged with an **"AI-evaluated"** badge.
 
-### Settings Architecture (`/settings/:tab`)
-- **Desktop (≥768px)**: Left navigation sidebar (`Profile`, `Account`, `Preferences`, `Privacy`, `Notifications`) + right form panel.
-- **Mobile (<768px)**: Top section selector dropdown + stacked form fields.
-- **Dirty State & Unsaved Alerts**: Save buttons are disabled until forms are dirty and valid. Window `beforeunload` and tab-switch confirmations protect against accidental data loss.
-- **Danger Zone**: Requires exact typed confirmation phrase (`"delete my account"`) before enabling account deletion.
+---
 
-### AI-Evaluated Verdict Transparency
-- Because verdicts and resource profiles are judged asynchronously by AI evaluation workers, runtimes and memory allocations are captioned as **"estimated"** and tagged with an **"AI-evaluated"** badge.
+## 7. Public Landing Page Guidelines (`/`)
 
+### Routing Behavior
+- Route `/` serves signed-out visitors.
+- Authenticated visitors visiting `/` are automatically redirected to `/dashboard`.
+- Theme selection persists across reloads via `localStorage.getItem('codekro_theme')`.
 
+### Strict "No Decoration" Rules
+- **BANNED**:
+  - Gradient text
+  - Glowing orbs or blurred color blobs
+  - Glowing buttons / pulsing borders
+  - Pulsing status dots
+  - Sparkle / magic AI icons
+  - Stacked colored status pills
+  - Colored icon tiles on every feature
+  - Fake "live" indicators or fabricated learner statistics
+- **Green Accent Rule**: Green (`#00ED64`) is reserved strictly for the primary CTA, text links, focus rings, and the `Accepted` verdict inside the product preview mockup. Everything else is neutral.
+- **Surface Rhythm**: Section backgrounds alternate between `--bg-base` (`#0B1217`) and `--bg-surface` (`#111A21`) to establish structure without heavy border dividers.
+
+### Section Sequence & Components (`src/features/landing`)
+1. **`LandingHeader`**: 56px sticky bar with Logo, navigation links (Problems `#problems`, Contests `#contests`, FAQ `#faq`), theme toggle, ghost "Sign in" button, and primary "Get started" button. Collapses to an accessible drawer on mobile.
+2. **`Hero` & `ProductPreview`**: Single-color headline, supporting sentence, primary CTA "Start solving", secondary CTA "Browse problems", muted "Free to start. No credit card." note. Side-by-side on desktop with a static product preview card showing a split problem view and an Accepted solution with AI-evaluated caption.
+3. **`ProblemPreviewTable`**: Live-looking sample of 5 problems (title, difficulty pill, topic) in a clean table with a "View all problems" link and loading skeleton.
+4. **`HowItWorks`**: 3 numbered steps in plain monospace numerals (`01`, `02`, `03`) with zero decorative icon tiles.
+5. **`FeatureGrid`**: 2x3 grid with small neutral line icons, short titles, and factual descriptions.
+6. **`ContestTeaser`**: Dynamic upcoming contest preview showing start time in the visitor's local timezone, countdown timer, duration, and registration button. Silently omitted if no contest is scheduled.
+7. **`ProgressPreview`**: Clean static view of the 12-month calendar heatmap and Easy / Medium / Hard progress ring and bars.
+8. **`FaqAccordion`**: 5 accessible questions and answers with `aria-expanded` and `aria-controls` disclosures, fully transparent about AI evaluation benchmarks.
+9. **`FinalCta`**: Single headline, supporting sentence, primary "Create free account" CTA, and secondary "Browse problem set" CTA.
+10. **`LandingFooter`**: Semantic `<footer>` landmark with Logo, columns (`Product`, `Resources`, `Company`, `Legal`), GitHub link, and copyright.
+
+### Responsive Breakpoints & Accessibility
+- Tested and verified at `375px`, `768px`, `1024px`, and `1280px`.
+- Touch targets on interactive elements are at least 44px x 44px.
+- Skip-to-content link positioned at the top of the DOM for keyboard and screen reader users.

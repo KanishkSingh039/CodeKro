@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppLayout from './layouts/AppLayout';
 import AuthLayout from './layouts/AuthLayout';
@@ -7,6 +7,7 @@ import DashboardView from './features/dashboard/DashboardView';
 import ProblemWorkspace from './features/problem/ProblemWorkspace';
 import ProfileView from './features/profile/ProfileView';
 import SettingsView from './features/profile/SettingsView';
+import LandingView from './features/landing/LandingView';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,9 +20,19 @@ const queryClient = new QueryClient({
 });
 
 export default function App() {
+  const getInitialTheme = () => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('theme')) {
+      return params.get('theme') === 'light' ? 'light' : 'dark';
+    }
+    const saved = localStorage.getItem('codekro_theme');
+    if (saved) return saved;
+    return 'dark'; // Dark by default as required
+  };
+
   const parseCurrentLocation = () => {
     const pathname = window.location.pathname;
-    const params = new URLSearchParams(window.location.search);
+    const isAuthed = localStorage.getItem('codekro_auth') === 'true';
 
     // Route: /u/:username
     if (pathname.startsWith('/u/')) {
@@ -42,19 +53,39 @@ export default function App() {
       return { route: 'problem', username: 'kanishk', slug, tab: 'login', settingsTab: 'profile' };
     }
 
+    // Route: /problems (list)
+    if (pathname === '/problems') {
+      return { route: 'dashboard', username: 'kanishk', slug: 'two-sum', tab: 'login', settingsTab: 'profile' };
+    }
+
     // Route: /dashboard
     if (pathname === '/dashboard') {
       return { route: 'dashboard', username: 'kanishk', slug: 'two-sum', tab: 'login', settingsTab: 'profile' };
     }
 
-    // Default: / redirects to auth (login/register)
-    const tab = pathname === '/register' || params.get('tab') === 'register' ? 'register' : 'login';
-    return { route: 'auth', username: 'kanishk', slug: 'two-sum', tab, settingsTab: 'profile' };
-  };
+    // Route: /login or /register
+    if (pathname === '/login' || pathname === '/register') {
+      return {
+        route: 'auth',
+        username: 'kanishk',
+        slug: 'two-sum',
+        tab: pathname === '/register' ? 'register' : 'login',
+        settingsTab: 'profile',
+      };
+    }
 
-  const getInitialTheme = () => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('theme') === 'light' ? 'light' : 'dark';
+    // Route: / (root)
+    // If signed-in: redirect to /dashboard
+    // If signed-out: landing page
+    if (pathname === '/' || pathname === '') {
+      if (isAuthed) {
+        return { route: 'dashboard', username: 'kanishk', slug: 'two-sum', tab: 'login', settingsTab: 'profile' };
+      }
+      return { route: 'landing', username: 'kanishk', slug: 'two-sum', tab: 'login', settingsTab: 'profile' };
+    }
+
+    // Fallback for unknown routes
+    return { route: 'landing', username: 'kanishk', slug: 'two-sum', tab: 'login', settingsTab: 'profile' };
   };
 
   const initial = parseCurrentLocation();
@@ -65,15 +96,21 @@ export default function App() {
   const [settingsTab, setSettingsTab] = useState(initial.settingsTab || 'profile');
   const [theme, setTheme] = useState(getInitialTheme);
 
-  // Sync theme with data-theme attribute on root element
+  // Sync theme with data-theme attribute on root element & persist
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem('codekro_theme', theme);
+    } catch {
+      // Ignore in restricted environments
+    }
   }, [theme]);
 
-  // Ensure root URL / visually redirects to /login
+  // Sync URL for signed-in root visits
   useEffect(() => {
-    if (window.location.pathname === '/') {
-      window.history.replaceState(null, '', '/login');
+    const isAuthed = localStorage.getItem('codekro_auth') === 'true';
+    if (window.location.pathname === '/' && isAuthed) {
+      window.history.replaceState(null, '', '/dashboard');
     }
   }, []);
 
@@ -107,7 +144,21 @@ export default function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* 1. Problem Workspace Route: /problems/:slug */}
+      {/* 1. Public Landing Page Route: / (signed-out visitors) */}
+      {currentRoute === 'landing' && (
+        <LandingView
+          onNavigate={(target) => {
+            if (target === 'login') navigateTo('/login');
+            else if (target === 'register') navigateTo('/register');
+            else if (target === 'problems') navigateTo('/problems');
+            else if (target === 'dashboard') navigateTo('/dashboard');
+          }}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+        />
+      )}
+
+      {/* 2. Problem Workspace Route: /problems/:slug */}
       {currentRoute === 'problem' && (
         <ProblemWorkspace
           slug={problemSlug}
@@ -118,13 +169,14 @@ export default function App() {
         />
       )}
 
-      {/* 2. Public / Owner Profile Route: /u/:username */}
+      {/* 3. Public / Owner Profile Route: /u/:username */}
       {currentRoute === 'profile' && (
         <AppLayout
           currentRoute="profile"
           onRouteChange={(dest) => {
             if (dest === 'auth') {
-              navigateTo('/login');
+              localStorage.removeItem('codekro_auth');
+              navigateTo('/');
             } else if (dest === 'settings') {
               navigateTo('/settings/profile');
             } else if (dest === 'profile') {
@@ -145,13 +197,14 @@ export default function App() {
         </AppLayout>
       )}
 
-      {/* 3. Settings Route: /settings/profile */}
+      {/* 4. Settings Route: /settings/profile */}
       {currentRoute === 'settings' && (
         <AppLayout
           currentRoute="settings"
           onRouteChange={(dest) => {
             if (dest === 'auth') {
-              navigateTo('/login');
+              localStorage.removeItem('codekro_auth');
+              navigateTo('/');
             } else if (dest === 'profile') {
               navigateTo('/u/kanishk');
             } else if (dest === 'settings') {
@@ -166,18 +219,22 @@ export default function App() {
           <SettingsView
             initialTab={settingsTab}
             onBackToProfile={() => navigateTo('/u/kanishk')}
-            onAccountDeleted={() => navigateTo('/login')}
+            onAccountDeleted={() => {
+              localStorage.removeItem('codekro_auth');
+              navigateTo('/');
+            }}
           />
         </AppLayout>
       )}
 
-      {/* 4. Dashboard Route: /dashboard */}
+      {/* 5. Dashboard Route: /dashboard */}
       {currentRoute === 'dashboard' && (
         <AppLayout
           currentRoute="dashboard"
           onRouteChange={(dest) => {
             if (dest === 'auth') {
-              navigateTo('/login');
+              localStorage.removeItem('codekro_auth');
+              navigateTo('/');
             } else if (dest === 'profile') {
               navigateTo('/u/kanishk');
             } else if (dest === 'settings') {
@@ -198,7 +255,7 @@ export default function App() {
         </AppLayout>
       )}
 
-      {/* 5. Auth Route: /login, /register, and root / */}
+      {/* 6. Auth Route: /login and /register */}
       {currentRoute === 'auth' && (
         <AuthLayout theme={theme} onToggleTheme={toggleTheme}>
           <AuthCard
@@ -207,11 +264,13 @@ export default function App() {
               setActiveAuthTab(tab);
               window.history.replaceState(null, '', tab === 'register' ? '/register' : '/login');
             }}
-            onSuccess={() => navigateTo('/dashboard')}
+            onSuccess={() => {
+              localStorage.setItem('codekro_auth', 'true');
+              navigateTo('/dashboard');
+            }}
           />
         </AuthLayout>
       )}
     </QueryClientProvider>
   );
 }
-

@@ -2,21 +2,117 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Primary Meta Tags -->
+    <title>CodeKro — Practice Coding, Prepare for Interviews</title>
+    <meta name="title" content="CodeKro — Practice Coding, Prepare for Interviews" />
+    <meta name="description" content="Calm, developer-first coding practice and technical interview preparation platform. Solve algorithmic challenges in C++, Python, Java, JavaScript, and Go with automated evaluation." />
+    <meta name="keywords" content="coding practice, interview prep, algorithms, data structures, leetcode alternative, competitive programming" />
+    <link rel="canonical" href="https://codekro.dev/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://codekro.dev/" />
+    <meta property="og:title" content="CodeKro — Practice Coding, Prepare for Interviews" />
+    <meta property="og:description" content="Calm, developer-first coding practice and technical interview preparation platform. Solve algorithmic challenges with automated evaluation." />
+    <meta property="og:site_name" content="CodeKro" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://codekro.dev/" />
+    <meta name="twitter:title" content="CodeKro — Practice Coding, Prepare for Interviews" />
+    <meta name="twitter:description" content="Calm, developer-first coding practice and technical interview preparation platform. Solve algorithmic challenges with automated evaluation." />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <title>CodeKro — Practice Coding & Algorithms</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Schema.org Structured Data (WebSite + FAQPage) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://codekro.dev/#website",
+          "url": "https://codekro.dev/",
+          "name": "CodeKro",
+          "description": "Coding practice and interview preparation platform",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://codekro.dev/problems?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://codekro.dev/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "Is CodeKro free to use?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. All core features — including the problem repository, automated evaluations, contests, and progress tracking — are free to use without requiring a credit card."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Which programming languages are supported?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "CodeKro supports C++ (GCC 13), Python 3, Java (OpenJDK 21), JavaScript (Node.js 20), and Go (v1.22). Each language runs inside isolated test containers."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does AI feedback work and how accurate is it?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Submissions are verified against standardized test suites and analyzed by evaluation workers. Runtime and memory metrics are estimated benchmarks to guide optimization, not bare-metal hardware timings."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Can I use CodeKro for technical interview preparation?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. The problem set spans classical algorithms, data structures, and company-tagged questions frequently asked during technical software engineering interviews."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How are scheduled contests organized and scored?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Contests are held on scheduled dates with a fixed time window. Solutions are scored based on the number of passed test cases and the total time taken, including penalties for incorrect submissions."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+
+    <!-- Theme persistence inline script to prevent flash -->
     <script>
       (function() {
-        const params = new URLSearchParams(window.location.search);
-        const theme = params.get('theme') || 'dark';
-        document.documentElement.setAttribute('data-theme', theme);
+        try {
+          var params = new URLSearchParams(window.location.search);
+          var paramTheme = params.get('theme');
+          var saved = localStorage.getItem('codekro_theme');
+          var theme = paramTheme || saved || 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
       })();
     </script>
   </head>
-  <body class="bg-bg-base text-text-primary antialiased selection:bg-accent/20 selection:text-text-primary">
+  <body class="bg-base text-text antialiased selection:bg-accent/20 selection:text-text">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

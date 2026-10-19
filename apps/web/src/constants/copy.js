@@ -339,5 +339,181 @@ public:
     },
     unsavedChanges: 'You have unsaved changes. Are you sure you want to leave?',
   },
+  landing: {
+    header: {
+      problems: 'Problems',
+      contests: 'Contests',
+      docs: 'Docs',
+      signIn: 'Sign in',
+      getStarted: 'Get started',
+    },
+    hero: {
+      headline: 'Practice coding. Prepare for interviews.',
+      subhead: 'A focused, distraction-free environment for algorithmic challenges, automated test evaluation, and scheduled contests.',
+      primaryCta: 'Start solving',
+      secondaryCta: 'Browse problems',
+      note: 'Free to start. No credit card required.',
+    },
+    productPreview: {
+      sampleProblemTitle: 'Two Sum',
+      difficulty: 'Easy',
+      sampleDescription: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
+      sampleInput: 'nums = [2,7,11,15], target = 9',
+      sampleOutput: '[0,1]',
+      statusAccepted: 'Accepted',
+      runtime: '4 ms (estimated)',
+      memory: '10.4 MB (estimated)',
+      verdictCaption: 'AI-evaluated verdict',
+    },
+    problemStrip: {
+      title: 'Explore algorithmic challenges',
+      subtitle: 'From fundamental data structures to advanced graph theory and dynamic programming.',
+      viewAll: 'View all problems',
+    },
+    howItWorks: {
+      title: 'How it works',
+      subtitle: 'A straightforward workflow designed for focused problem solving.',
+      steps: [
+        {
+          number: '01',
+          title: 'Pick a problem',
+          desc: 'Select challenges by difficulty, topic tags, or curated company collections tailored to your preparation goals.',
+        },
+        {
+          number: '02',
+          title: 'Write your solution',
+          desc: 'Code in standard languages including C++, Python, Java, JavaScript, and Go in an integrated Monaco workspace.',
+        },
+        {
+          number: '03',
+          title: 'Get instant feedback',
+          desc: 'Run sample cases and submit to our automated evaluation queue to verify correctness and examine test diagnostics.',
+        },
+      ],
+    },
+    features: {
+      title: 'Platform capabilities',
+      subtitle: 'Everything you need to sharpen your algorithm skills without distraction.',
+      items: [
+        {
+          id: 'editor',
+          title: 'Multi-language editor',
+          desc: 'Syntax highlighting, line numbers, autocomplete, configurable font and tab sizing, and optional Vim keybindings.',
+        },
+        {
+          id: 'ai-feedback',
+          title: 'AI feedback on your solution',
+          desc: 'Automated evaluation against comprehensive test cases with clear diagnostics for incorrect logic and edge cases.',
+        },
+        {
+          id: 'filters',
+          title: 'Topic and company filters',
+          desc: 'Filter challenges by underlying data structure, algorithmic paradigm, or company interview occurrences.',
+        },
+        {
+          id: 'contests',
+          title: 'Scheduled contests',
+          desc: 'Compete in rated weekly and biweekly contests under timed conditions to benchmark your performance.',
+        },
+        {
+          id: 'tracking',
+          title: 'Progress and streak tracking',
+          desc: 'Monitor problem resolution distribution, track acceptance rates, and log daily activity streaks across a 12-month calendar.',
+        },
+        {
+          id: 'solutions',
+          title: 'Discussion and solutions',
+          desc: 'Review community solutions, alternative approaches, and complexity breakdowns to learn idiomatic implementations.',
+        },
+      ],
+    },
+    contests: {
+      title: 'Upcoming contest',
+      subtitle: 'Test your problem-solving speed under realistic contest conditions.',
+      registerBtn: 'Register for contest',
+      registeredBtn: 'Registered',
+      startsIn: 'Starts in',
+      duration: 'Duration',
+      participants: 'Registered participants',
+    },
+    progress: {
+      title: 'Track your growth over time',
+      subtitle: 'Consistency is key. Review problem distribution, maintain your daily practice streak, and observe measurable improvement.',
+      solvedSummary: 'Solved problems distribution across difficulty tiers',
+      heatmapLabel: '12-month contribution activity',
+    },
+    faq: {
+      title: 'Frequently asked questions',
+      subtitle: 'Clear answers about the platform, evaluations, and preparation.',
+      items: [
+        {
+          q: 'Is CodeKro free to use?',
+          a: 'Yes. All core features — including the problem repository, automated evaluations, contests, and progress tracking — are free to use without requiring a credit card.',
+        },
+        {
+          q: 'Which programming languages are supported?',
+          a: 'CodeKro supports C++ (GCC 13), Python 3, Java (OpenJDK 21), JavaScript (Node.js 20), and Go (v1.22). Each language runs inside isolated test containers.',
+        },
+        {
+          q: 'How does AI feedback work and how accurate is it?',
+          a: 'Submissions are verified against standardized test suites and analyzed by evaluation workers. Runtime and memory metrics are estimated benchmarks to guide optimization, not bare-metal hardware timings.',
+        },
+        {
+          q: 'Can I use CodeKro for technical interview preparation?',
+          a: 'Yes. The problem set spans classical algorithms, data structures, and company-tagged questions frequently asked during technical software engineering interviews.',
+        },
+        {
+          q: 'How are scheduled contests organized and scored?',
+          a: 'Contests are held on scheduled dates with a fixed time window. Solutions are scored based on the number of passed test cases and the total time taken, including penalties for incorrect submissions.',
+        },
+      ],
+    },
+    finalCta: {
+      headline: 'Start practicing today.',
+      subhead: 'Join developers solving algorithmic challenges, preparing for interviews, and measuring their progress.',
+      button: 'Create free account',
+      secondary: 'Browse problem set',
+    },
+    footer: {
+      tagline: 'Focused competitive coding and interview preparation.',
+      columns: {
+        product: {
+          title: 'Product',
+          links: [
+            { label: 'Problems', href: '#problems' },
+            { label: 'Contests', href: '#contests' },
+            { label: 'Leaderboard', href: '#leaderboard' },
+          ],
+        },
+        resources: {
+          title: 'Resources',
+          links: [
+            { label: 'Documentation', href: '#docs' },
+            { label: 'Editorial Guides', href: '#editorials' },
+            { label: 'Community', href: '#discuss' },
+          ],
+        },
+        company: {
+          title: 'Company',
+          links: [
+            { label: 'About', href: '#about' },
+            { label: 'Blog', href: '#blog' },
+            { label: 'Careers', href: '#careers' },
+          ],
+        },
+        legal: {
+          title: 'Legal',
+          links: [
+            { label: 'Privacy Policy', href: '#privacy' },
+            { label: 'Terms of Service', href: '#terms' },
+            { label: 'Security', href: '#security' },
+          ],
+        },
+      },
+      copyright: '© 2026 CodeKro. All rights reserved.',
+      githubUrl: 'https://github.com/KanishkSingh039/CodeKro',
+    },
+  },
 };
+
 

@@ -1740,6 +1740,50 @@ export const apiClient = {
     }
     return { success: true, message: 'Account deleted.' };
   },
+
+  /**
+   * Landing: GET /api/problems?limit=5&featured=true
+   */
+  async getFeaturedProblems(limit = 5) {
+    await new Promise((r) => setTimeout(r, 60));
+    return rawProblems.slice(0, limit).map((p) => ({
+      id: p.id,
+      frontendQuestionId: p.frontendQuestionId,
+      title: p.title,
+      titleSlug: p.titleSlug,
+      difficulty: p.difficulty,
+      topicTags: p.topicTags,
+      acceptanceRate: p.acceptanceRate,
+    }));
+  },
+
+  /**
+   * Landing: GET /api/contests?upcoming=true&limit=1
+   */
+  async getUpcomingContest() {
+    await new Promise((r) => setTimeout(r, 50));
+    const contests = await apiClient.getUpcomingContests();
+    return contests.length > 0 ? contests[0] : null;
+  },
+
+  /**
+   * Landing: GET /api/public/stats
+   */
+  async getPublicStats() {
+    await new Promise((r) => setTimeout(r, 40));
+    return {
+      totalProblems: rawProblems.length > 0 ? 3120 : 0,
+      totalTopics: 18,
+      supportedLanguages: 5,
+    };
+  },
 };
+
+export const getFeaturedProblems = (limit) => apiClient.getFeaturedProblems(limit);
+export const getUpcomingContest = () => apiClient.getUpcomingContest();
+export const getPublicStats = () => apiClient.getPublicStats();
+
+export default apiClient;
+
 
 
