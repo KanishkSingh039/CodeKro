@@ -1,7 +1,155 @@
 /**
- * CodeKro API Client Stub & Mock Data Engine
- * Designed for pure UI development; cleanly swapped for the real backend later.
+ * CodeKro API Client & Services Adapter
+ * Configured for seamless microservices integration (Auth, Problem, Execution)
+ * with robust error handling, token management, and complete mock fallback engine.
  */
+
+// Central Microservices & API Gateway Configuration
+export const API_CONFIG = {
+  BASE_URL: import.meta.env?.VITE_API_BASE_URL || '',
+  AUTH_SERVICE_URL:
+    import.meta.env?.VITE_AUTH_API_URL ||
+    import.meta.env?.VITE_API_BASE_URL ||
+    'http://localhost:3011',
+  PROBLEM_SERVICE_URL:
+    import.meta.env?.VITE_PROBLEM_API_URL ||
+    import.meta.env?.VITE_API_BASE_URL ||
+    'http://localhost:5000',
+  EXECUTION_SERVICE_URL:
+    import.meta.env?.VITE_EXECUTION_API_URL ||
+    import.meta.env?.VITE_API_BASE_URL ||
+    'http://localhost:4000',
+
+  // Toggle mock vs real backend API. Set VITE_USE_MOCK_API='false' to target live backend.
+  USE_MOCK: import.meta.env?.VITE_USE_MOCK_API !== 'false',
+  TIMEOUT_MS: 15000,
+};
+
+// Known backend microservice endpoint patterns
+export const ENDPOINTS = {
+  AUTH: {
+    LOGIN: '/auth/login',
+    REGISTER: '/auth/register',
+    HEALTH: '/auth/health',
+  },
+  PROBLEM: {
+    FETCH_ALL: '/problem/fetchProblem',
+    AI_SERVICE: '/problem/AI_service',
+    HEALTH: '/problem/health',
+  },
+  EXECUTION: {
+    EXECUTE: '/execution/service',
+    HEALTH: '/execution/health',
+  },
+};
+
+// Auth Token Management
+export const TOKEN_STORAGE_KEY = 'codekro_auth_token';
+
+export const getAuthToken = () => {
+  try {
+    return localStorage.getItem(TOKEN_STORAGE_KEY) || null;
+  } catch {
+    return null;
+  }
+};
+
+export const setAuthToken = (token) => {
+  try {
+    if (token) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+    }
+  } catch {
+    // Ignore in restricted environments
+  }
+};
+
+export const clearAuthToken = () => setAuthToken(null);
+
+// Normalized API Error Class
+export class ApiError extends Error {
+  constructor(message, status = 500, data = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
+/**
+ * Universal HTTP Request Helper with auth token injection, timeout, and response normalization
+ * @param {string} url - Target URL or endpoint
+ * @param {RequestInit & { params?: Record<string, any>, timeout?: number }} [options]
+ * @returns {Promise<any>}
+ */
+export async function request(url, options = {}) {
+  const { params, timeout = API_CONFIG.TIMEOUT_MS, headers = {}, ...fetchOptions } = options;
+
+  let fullUrl = url;
+  if (params && Object.keys(params).length > 0) {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && val !== '') {
+        query.append(key, String(val));
+      }
+    });
+    const qs = query.toString();
+    if (qs) {
+      fullUrl += (fullUrl.includes('?') ? '&' : '?') + qs;
+    }
+  }
+
+  const token = getAuthToken();
+  const requestHeaders = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...headers,
+  };
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(fullUrl, {
+      ...fetchOptions,
+      headers: requestHeaders,
+      signal: controller.signal,
+      body:
+        fetchOptions.body &&
+        typeof fetchOptions.body === 'object' &&
+        !(fetchOptions.body instanceof FormData)
+          ? JSON.stringify(fetchOptions.body)
+          : fetchOptions.body,
+    });
+
+    clearTimeout(timeoutId);
+
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    const responseData = isJson ? await response.json() : await response.text();
+
+    if (!response.ok) {
+      const message =
+        (typeof responseData === 'object' && (responseData?.message || responseData?.error)) ||
+        `HTTP Error ${response.status}: ${response.statusText}`;
+      throw new ApiError(message, response.status, responseData);
+    }
+
+    return responseData;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new ApiError('Request timed out', 408);
+    }
+    if (err instanceof ApiError) {
+      throw err;
+    }
+    throw new ApiError(err.message || 'Network request failed', 0, err);
+  }
+}
+
 
 // In-memory problem store with localStorage persistence for bookmarking/mutations
 const STORAGE_BOOKMARKS_KEY = 'codekro_bookmarked_ids';
@@ -526,18 +674,59 @@ const generateHeatmap = () => {
 const activityHeatmap = generateHeatmap();
 
 export const apiClient = {
+  // Config & Client Utilities
+  config: API_CONFIG,
+  request,
+  getAuthToken,
+  setAuthToken,
+  clearAuthToken,
+  getCurrentUserId() {
+    try {
+      return localStorage.getItem('codekro_user_id') || 'usr_kanishk01';
+    } catch {
+      return 'usr_kanishk01';
+    }
+  },
+
   /**
    * Auth: Login user
+   * Ready for real backend API: POST /auth/login
    */
   async login(credentials) {
+    if (!API_CONFIG.USE_MOCK) {
+      const data = await request(`${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.LOGIN}`, {
+        method: 'POST',
+        body: {
+          email: credentials?.email,
+          password: credentials?.password,
+        },
+      });
+      if (data?.token) {
+        setAuthToken(data.token);
+      }
+      return data;
+    }
     console.info('[apiClient] login:', { email: credentials?.email });
     return Promise.resolve({ success: true, message: 'Ready for integration' });
   },
 
   /**
    * Auth: Register user
+   * Ready for real backend API: POST /auth/register
    */
   async register(data) {
+    if (!API_CONFIG.USE_MOCK) {
+      const res = await request(`${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.REGISTER}`, {
+        method: 'POST',
+        body: {
+          name: data?.name,
+          username: data?.username,
+          email: data?.email,
+          password: data?.password,
+        },
+      });
+      return res;
+    }
     console.info('[apiClient] register:', { username: data?.username, email: data?.email });
     return Promise.resolve({ success: true, message: 'Ready for integration' });
   },
@@ -567,7 +756,6 @@ export const apiClient = {
    * GET /api/problems?page&limit&difficulty&status&tag&company&q&sort
    */
   async getProblems(params = {}) {
-    await new Promise((r) => setTimeout(r, 90));
     const {
       page = 1,
       limit = 20,
@@ -578,6 +766,31 @@ export const apiClient = {
       company = 'all',
       sort = 'id_asc',
     } = params;
+
+    if (!API_CONFIG.USE_MOCK) {
+      try {
+        const res = await request(`${API_CONFIG.PROBLEM_SERVICE_URL}${ENDPOINTS.PROBLEM.FETCH_ALL}`, {
+          method: 'POST',
+          body: {
+            user_id: apiClient.getCurrentUserId(),
+            ...params,
+          },
+        });
+        if (res?.Problem || res?.getProblemFromDB) {
+          const list = res.Problem || res.getProblemFromDB || [];
+          return {
+            problems: Array.isArray(list) ? list : [],
+            total: Array.isArray(list) ? list.length : 0,
+            page,
+            totalPages: Math.ceil((Array.isArray(list) ? list.length : 1) / limit),
+          };
+        }
+      } catch (err) {
+        console.warn('[apiClient] getProblems failed, falling back to mock:', err);
+      }
+    }
+
+    await new Promise((r) => setTimeout(r, 90));
 
     let filtered = rawProblems.map((p) => ({
       ...p,
@@ -838,6 +1051,21 @@ export const apiClient = {
    * GET /api/problems/:slug
    */
   async getProblemBySlug(slug) {
+    if (!API_CONFIG.USE_MOCK) {
+      try {
+        const fetched = await request(`${API_CONFIG.PROBLEM_SERVICE_URL}/problem/${slug}`);
+        if (fetched && (fetched.title || fetched.id)) {
+          return {
+            ...fetched,
+            isBookmarked: userBookmarks.has(fetched.id),
+            starterCode: fetched.starterCode || { cpp: '', java: '', python: '', javascript: '', go: '' },
+          };
+        }
+      } catch (err) {
+        console.warn(`[apiClient] getProblemBySlug(${slug}) API error, using mock fallback:`, err);
+      }
+    }
+
     await new Promise((r) => setTimeout(r, 70));
     const normalizedSlug = (slug || 'two-sum').toLowerCase();
     const foundProblem = rawProblems.find(
@@ -861,13 +1089,13 @@ export const apiClient = {
       // fallback
     }
 
-    // Default starter codes for the problem
+    // Starter code initialized to empty strings ("") ready for user code or API response
     const starterCode = {
-      'cpp': `class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        unordered_map<int, int> seen;\n        for (int i = 0; i < nums.size(); ++i) {\n            int complement = target - nums[i];\n            if (seen.find(complement) != seen.end()) {\n                return {seen[complement], i};\n            }\n            seen[nums[i]] = i;\n        }\n        return {};\n    }\n};`,
-      'java': `class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        Map<Integer, Integer> map = new HashMap<>();\n        for (int i = 0; i < nums.length; i++) {\n            int complement = target - nums[i];\n            if (map.containsKey(complement)) {\n                return new int[] { map.get(complement), i };\n            }\n            map.put(nums[i], i);\n        }\n        return new int[] {};\n    }\n}`,
-      'python': `class Solution:\n    def twoSum(self, nums: list[int], target: int) -> list[int]:\n        seen = {}\n        for i, num in enumerate(nums):\n            complement = target - num\n            if complement in seen:\n                return [seen[complement], i]\n            seen[num] = i\n        return []`,
-      'javascript': `/**\n * @param {number[]} nums\n * @param {number} target\n * @return {number[]}\n */\nvar twoSum = function(nums, target) {\n    const map = new Map();\n    for (let i = 0; i < nums.length; i++) {\n        const complement = target - nums[i];\n        if (map.has(complement)) {\n            return [map.get(complement), i];\n        }\n        map.set(nums[i], i);\n    }\n    return [];\n};`,
-      'go': `func twoSum(nums []int, target int) []int {\n    seen := make(map[int]int)\n    for i, num := range nums {\n        complement := target - num\n        if idx, ok := seen[complement]; ok {\n            return []int{idx, i}\n        }\n        seen[num] = i\n    }\n    return nil\n}`,
+      'cpp': '',
+      'java': '',
+      'python': '',
+      'javascript': '',
+      'go': '',
     };
 
     const testCases = [
@@ -1011,12 +1239,21 @@ export const apiClient = {
    * GET /api/problems/:id/starter-code?lang=
    */
   async getStarterCode(problemId, lang = 'cpp') {
+    if (!API_CONFIG.USE_MOCK) {
+      try {
+        return await request(`${API_CONFIG.PROBLEM_SERVICE_URL}/problem/${problemId}/starter-code`, {
+          params: { lang },
+        });
+      } catch {
+        // Fallback to local problem
+      }
+    }
     await new Promise((r) => setTimeout(r, 40));
     const problem = await apiClient.getProblemBySlug(String(problemId));
     return {
       problemId: Number(problemId),
       lang,
-      code: problem.starterCode[lang] || `// Write your ${lang} code here\n`,
+      code: problem?.starterCode?.[lang] ?? '',
     };
   },
 
@@ -1075,8 +1312,22 @@ export const apiClient = {
 
   /**
    * POST /api/problems/:id/run
+   * Integrates with POST /execution/service
    */
   async runCode({ problemId, lang, code, testcases }) {
+    if (!API_CONFIG.USE_MOCK) {
+      return await request(`${API_CONFIG.EXECUTION_SERVICE_URL}${ENDPOINTS.EXECUTION.EXECUTE}`, {
+        method: 'POST',
+        body: {
+          user_id: apiClient.getCurrentUserId(),
+          problem_id: problemId,
+          code,
+          language: lang,
+          input: testcases?.[0]?.input || '',
+          test_case: testcases,
+        },
+      });
+    }
     await new Promise((r) => setTimeout(r, 60));
     const submissionId = 'run_' + Math.random().toString(36).substring(2, 9);
     apiClient._mockSubmissions.set(submissionId, {
@@ -1093,8 +1344,22 @@ export const apiClient = {
 
   /**
    * POST /api/problems/:id/submit
+   * Integrates with POST /execution/service
    */
   async submitCode({ problemId, lang, code }) {
+    if (!API_CONFIG.USE_MOCK) {
+      return await request(`${API_CONFIG.EXECUTION_SERVICE_URL}${ENDPOINTS.EXECUTION.EXECUTE}`, {
+        method: 'POST',
+        body: {
+          user_id: apiClient.getCurrentUserId(),
+          problem_id: problemId,
+          code,
+          language: lang,
+          input: '',
+          test_case: [],
+        },
+      });
+    }
     await new Promise((r) => setTimeout(r, 60));
     const submissionId = 'sub_' + Math.random().toString(36).substring(2, 9);
     apiClient._mockSubmissions.set(submissionId, {
@@ -1784,6 +2049,7 @@ export const getUpcomingContest = () => apiClient.getUpcomingContest();
 export const getPublicStats = () => apiClient.getPublicStats();
 
 export default apiClient;
+
 
 
 
