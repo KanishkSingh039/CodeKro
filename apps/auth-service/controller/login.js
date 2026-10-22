@@ -25,7 +25,7 @@ const login=async(req,res)=>{
         email:checkemail.email,
         username:checkemail.username,
     },process.env.JWT_SECRET,{expiresIn:"1h"});
-    await client.set(`${checkemail.username}`,JSON.stringify({
+    await client.set(`${checkemail.email}`,JSON.stringify({
         user:checkemail.username,
         email:checkemail.email,
         token

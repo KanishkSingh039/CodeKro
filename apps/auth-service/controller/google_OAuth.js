@@ -1,6 +1,9 @@
 require('dotenv').config();
 const logger=require('@codekro/logger');
 const {OAuth2Client}=require('google-auth-library');
+const {client}=require('@codekro/redis-config');
+const CodeKroUser=require('../schema/register');
+const jwt=require('jsonwebtoken');
 const googleauthclient= async()=>{
     try {
         const client_id=process.env.GOOGLE_CLIENT_ID;
@@ -10,12 +13,12 @@ const googleauthclient= async()=>{
         logger.error("Google credentials not defined");
         return { message: "Google credentials not defined" };
     }
-    const client=new OAuth2Client({
+    const Oauthclient=new OAuth2Client({
         client_id,
         client_secret,
         redirectUri
     });
-    return client;
+    return Oauthclient;
     } catch (error) {
         logger.error("Failed to create google auth client", error);
         throw error;
@@ -23,13 +26,12 @@ const googleauthclient= async()=>{
 }
 const RedirectToGoogleAuth=async(req,res)=>{
  try {
-    const client=await googleauthclient();
-    const url=client.generateAuthUrl({
+    const OAuthclient=await googleauthclient();
+    const url=OAuthclient.generateAuthUrl({
         access_type:"offline",
         prompt:"consent",
         scope:["openid","email","profile"]
     });
-    logger.info(`Google auth url : ${url}`);
     return res.redirect(url);
     
  } catch (error) {
@@ -48,15 +50,28 @@ const GoogleAuthCallback=async(req,res)=>{
             logger.error("Code not found");
             return res.status(400).json({ message: "Code not found" });
         }
-        logger.info("Google auth code : ",code.toString());
-        const client=await googleauthclient();
-        if(!client){
+        const OAuthclient=await googleauthclient();
+        if(!OAuthclient){
             logger.error("Client not found");
             return res.status(400).json({ message: "Client not found" });
         }
-        logger.info(`Google auth code : ${code.toString()}`);
-        const {tokens}=await client.getToken(code.toString());
-        logger.info(`Google auth tokens : ${JSON.stringify(tokens)}`);
+        const {tokens}=await OAuthclient.getToken(code.toString());
+        const verifytokenid=await OAuthclient.verifyIdToken({
+            idToken: tokens.id_token,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload=verifytokenid.getPayload();
+        const tokeninfo=await OAuthclient.getTokenInfo(tokens.access_token);
+        const checktheexistinguserwiththisemail=await CodeKroUser.find({email:tokeninfo.email});
+        if(!checktheexistinguserwiththisemail.length){
+            const jwtToken= jwt.sign({
+                email:payload.email,
+                username:payload.name,
+                picture:payload.picture,
+            },process.env.JWT_SECRET,{expiresIn:"1h"})
+            client.set(tokeninfo.email,JSON.stringify(jwtToken))
+            
+        }
         return res.status(200).json({ message: "Google auth tokens", tokens });
     } catch (error) {
         logger.error("Failed to google auth callback", error);
