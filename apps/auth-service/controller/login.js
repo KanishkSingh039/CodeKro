@@ -22,8 +22,12 @@ const login=async(req,res)=>{
     }
     logger.info("Login successfully",checkemail);
     const token=jwt.sign({
+        id:checkemail._id,
         email:checkemail.email,
         username:checkemail.username,
+        name:checkemail.username,
+        googlelogin:false,
+        
     },process.env.JWT_SECRET,{expiresIn:"1h"});
     await client.set(`${checkemail.email}`,JSON.stringify({
         user:checkemail.username,

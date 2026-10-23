@@ -69,7 +69,11 @@ const GoogleAuthCallback=async(req,res)=>{
                 username:payload.name,
                 picture:payload.picture,
             },process.env.JWT_SECRET,{expiresIn:"1h"})
-            client.set(tokeninfo.email,JSON.stringify(jwtToken))
+            client.set(tokeninfo.email,
+            {
+                JWTtoken:JSON.stringify(jwtToken),
+                GoogleAuthtoken:tokens,
+            })
             const Addtheusertodb=await CodeKroUser.create({
                 email:payload.email,
                 username:payload.name,
@@ -84,14 +88,28 @@ const GoogleAuthCallback=async(req,res)=>{
                 name:payload.name,
                 email:payload.email,
                 picture:payload.picture,
+                token:jwtToken,
+                googleAuthToken:tokens
             } });
         }
+        const jwtToken= jwt.sign({
+            id:checktheexistinguserwiththisemail._id,
+            name:checktheexistinguserwiththisemail.name,
+            username:checktheexistinguserwiththisemail.username,
+            email:checktheexistinguserwiththisemail.email,
+            picture:checktheexistinguserwiththisemail.picture,
+            googleAuthToken:tokens,
+            googlelogin:true
+    })
         return res.status(200).json({ message: "Google auth tokens",user:{
                 id:checktheexistinguserwiththisemail._id,
                 name:checktheexistinguserwiththisemail.name,
                 username:checktheexistinguserwiththisemail.username,
                 email:checktheexistinguserwiththisemail.email,
                 picture:checktheexistinguserwiththisemail.picture,
+                token:jwtToken,
+                googleAuthToken:tokens,
+                googlelogin:true
             } });
     } catch (error) {
         logger.error("Failed to google auth callback", error);
