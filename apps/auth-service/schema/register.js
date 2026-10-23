@@ -17,9 +17,13 @@ const userSchema=new mongoose.Schema({
         required:true,
         trim:true
     },
-    password:{
+    picture:{
         type:String,
         required:true,
+        trim:true
+    },
+    password:{
+        type:String,
         trim:true
     }
 })
