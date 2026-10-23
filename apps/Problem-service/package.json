@@ -11,6 +11,7 @@
     "@codekro/logger": "workspace:*",
     "@codekro/io-redis-config": "workspace:*",
     "@codekro/redis-config": "workspace:*",
+    "@codekro/authentication-middleware": "workspace:*",
     "@google/genai": "^2.26.0",
     "@openrouter/sdk": "^1.4.2",
     "bullmq": "^6.3.13",

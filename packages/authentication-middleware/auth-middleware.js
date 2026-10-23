@@ -1,7 +1,6 @@
 require("dotenv").config();
 const jwt=require("jsonwebtoken");
 const logger=require("@codekro/logger");
-const {client}=require('@codekro/redis-config');
 const {OAuth2Client}=require('google-auth-library');
 const authenticate=async (req,res,next)=>{
     try {

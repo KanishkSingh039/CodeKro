@@ -1,5 +1,6 @@
 const express=require("express");
 const router=express.Router();
 const {execution}=require("../controller/execution-controller");
-router.post("/service",execution);
+const { authenticate } = require("@codekro/authentication-middleware");
+router.post("/service",authenticate,execution);
 module.exports=router;

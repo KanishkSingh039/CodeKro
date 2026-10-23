@@ -9,5 +9,11 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "dependencies": {
+    "@codekro/logger": "workspace:*",
+    "dotenv": "^18.0.9",
+    "google-auth-library": "^11.3.1",
+    "jsonwebtoken": "^9.0.3"
+  }
 }
