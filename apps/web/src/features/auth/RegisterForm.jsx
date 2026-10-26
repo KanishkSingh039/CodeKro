@@ -56,7 +56,8 @@ export default function RegisterForm({ onSwitchToLogin, onSuccess }) {
         password: formData.password,
       });
       if (onSuccess) {
-        onSuccess();
+        // Pass the registered email so AuthCard can transition to the OTP step
+        onSuccess(formData.email);
       }
     } catch (err) {
       console.error(err);

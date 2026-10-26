@@ -43,7 +43,8 @@ export default function LoginForm({ onSwitchToRegister, onSuccess }) {
         password: formData.password,
       });
       if (onSuccess) {
-        onSuccess();
+        // Pass email so AuthCard can transition to the OTP verification step
+        onSuccess(formData.email);
       }
     } catch (err) {
       console.error(err);
