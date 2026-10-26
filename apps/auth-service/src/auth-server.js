@@ -6,9 +6,11 @@ const {connectToMongo}=require('@codekro/db_config');
 const app=express();
 const registerRoute=require("../routes/register");
 const loginRoute=require("../routes/login");
+const otpRoute=require('../routes/Otp_router');
 app.use(express.json());
 app.use("/auth",registerRoute);
 app.use("/auth",loginRoute);
+app.use("/auth",otpRoute);
 connectredis().then(()=>{
     logger.info("Redis connected");
 }).catch((err)=>{

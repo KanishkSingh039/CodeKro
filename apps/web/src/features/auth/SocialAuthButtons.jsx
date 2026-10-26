@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { COPY } from '../../constants/copy';
-import { API_CONFIG, request } from '../../lib/api';
+import { API_CONFIG } from '../../lib/api';
 
 /**
  * SocialAuthButtons

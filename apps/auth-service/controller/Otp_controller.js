@@ -3,9 +3,9 @@ const nodemailer=require("nodemailer");
 const logger=require("@codekro/logger")
 const {client}=require("@codekro/redis-config");
 const transporter=nodemailer.createTransport({
-    host:process.env.EMAIL_HOST,
-    port:process.env.EMAIL_PORT,
-    secure:process.env.EMAIL_SECURE,
+    host:process.env.SMTP_HOST,
+    port:Number(process.env.SMTP_PORT),
+    secure:Number(process.env.SMTP_PORT),
     auth:{
         user:process.env.EMAIL_USER,
         pass:process.env.EMAIL_PASS
@@ -13,11 +13,13 @@ const transporter=nodemailer.createTransport({
 });
 const OTP_GENERATOR=async(req,res)=>{
     try{
-    const {email}=req.body;
-    if(!email)
-    {
-        logger.error("Email is empty ");
-        return res.status(400).json({ message: "Bad Request" });
+        await transporter.verify();
+        console.log("SMTP connection successful");
+        const {email}=req.body;
+        if(!email)
+        {
+            logger.error("Email is empty ");
+            return res.status(400).json({ message: "Bad Request" });
     }
     const otp=Math.floor(100000+Math.random()*900000);
     const mailOptions={
@@ -27,7 +29,7 @@ const OTP_GENERATOR=async(req,res)=>{
         text:`Your OTP is ${otp}`
     }
     await transporter.sendMail(mailOptions);
-    client.set(`otp : ${email}`,otp,{EX:60*5});
+    await client.set(`otp : ${email}`,JSON.stringify(otp),{EX:60*5});
     return res.status(200).json({ message: "OTP sent successfully", otp });
     }
     catch(error){
@@ -43,7 +45,8 @@ const OTP_VERIFY=async(req,res)=>{
             logger.error("Email or OTP is empty ");
             return res.status(400).json({ message: "Bad Request" });
         }
-        const storedOTP=client.get(`otp : ${email}`);
+        const storedOTP=await client.get(`otp : ${email}`);
+        logger.info(storedOTP);
         if(!storedOTP)
         {
             logger.error("OTP is expired");

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import OtpInput from '../../components/ui/OtpInput';
 import Button from '../../components/ui/Button';
-import { apiClient, API_CONFIG, request } from '../../lib/api';
+import { API_CONFIG, request } from '../../lib/api';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
