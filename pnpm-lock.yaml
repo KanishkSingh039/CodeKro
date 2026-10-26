@@ -179,6 +179,9 @@ importers:
 
   apps/Problem-service:
     dependencies:
+      '@codekro/authentication-middleware':
+        specifier: workspace:*
+        version: link:../../packages/authentication-middleware
       '@codekro/db_config':
         specifier: workspace:*
         version: link:../../packages/DB_config
@@ -248,6 +251,9 @@ importers:
       mongoose:
         specifier: ^9.10.1
         version: 9.10.1
+      nodemailer:
+        specifier: ^10.2.1
+        version: 10.2.1
       nodemon:
         specifier: ^3.1.14
         version: 3.1.14
@@ -257,6 +263,9 @@ importers:
 
   apps/execution-service:
     dependencies:
+      '@codekro/authentication-middleware':
+        specifier: workspace:*
+        version: link:../../packages/authentication-middleware
       '@codekro/db_config':
         specifier: workspace:*
         version: link:../../packages/DB_config
@@ -1783,6 +1792,10 @@ packages:
   node-gyp-build@4.8.4:
     resolution: {integrity: sha512-LA4ZjwlnUblHVgq0oBF3Jl/6h/Nvs5fzBLwdEF4nuxnFdsfajde4WfxtJr3CaiH+F6ewcIB/q4jQ4UzPyid+CQ==}
     hasBin: true
+
+  nodemailer@10.2.1:
+    resolution: {integrity: sha512-ZrDNsPFoDMwefNs7sJwrYiEJ/CG4ClJWDZv05iNJsEBWa8GRDry1QJHTJxsuTAY9eDDKjX4k+q3SxslXJOao7w==}
+    engines: {node: '>=20.0.0'}
 
   nodemon@3.1.14:
     resolution: {integrity: sha512-jakjZi93UtB3jHMWsXL68FXSAosbLfY0In5gtKq3niLSkrWznrVBzXFNOEMJUfc9+Ke7SHWoAZsiMkNP3vq6Jw==}
@@ -3314,6 +3327,8 @@ snapshots:
     optional: true
 
   node-gyp-build@4.8.4: {}
+
+  nodemailer@10.2.1: {}
 
   nodemon@3.1.14:
     dependencies:
