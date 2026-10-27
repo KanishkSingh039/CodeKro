@@ -3,9 +3,9 @@ const logger = require('@codekro/logger');
 const express = require('express');
 const router = require('../routes/problem_router.js');
 const {connectredis}=require("@codekro/redis-config");
-
+const problemfetchrouter=require('../routes/FetchProblem.js')
 const {connectToMongo}=require("@codekro/db_config");
-const {problemgeneratorWorker}=require("../controller/problemGeneratorWorker");
+const {problemgeneratorWorker}=require("../controller/problemGeneratorWorker.js");
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 5000;
@@ -13,6 +13,7 @@ connectredis();
 connectToMongo();
 problemgeneratorWorker();
 app.use("/problem", router);
+app.use("/problem",problemfetchrouter);
 app.get("/problem/health", (req, res) => {
     console.log(`Health request received on port ${PORT}`);
 

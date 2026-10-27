@@ -1,14 +1,14 @@
 const logger = require("@codekro/logger");
-const {executionWorker}=require("./executionWorker");
 const {IOQueue}=require("../queue/IOqueue");
 const {QueueEvents}=require("bullmq");
-const { client } = require("@codekro/redis-config");
+const { io_client } = require("@codekro/redis-config");
 const IOqueue=IOQueue("problem-queue");
 const solutionQueue=IOQueue("solution-queue");
-const IOqueueEvents=new QueueEvents("problem-queue",{connection:client});
+const IOqueueEvents=new QueueEvents("problem-queue",{connection:io_client});
 const execution = async (req, res) => {
     try {
-        const {user_id, problem_id, code, language, input ,test_case } = req.body;
+        const { problem_id, code, language, input ,test_case } = req.body;
+        const user_id=req.user.id;
         if(!user_id || !problem_id)
             return res.status(400).json({ message: "Bad Request" });
         if (!code || !language || !input)
@@ -27,7 +27,6 @@ const execution = async (req, res) => {
         }
     );
     
-          await executionWorker();
           const result=await job.waitUntilFinished(
             IOqueueEvents,
             60000

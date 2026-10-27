@@ -29,8 +29,8 @@ const OTP_GENERATOR=async(req,res)=>{
         text:`Your OTP is ${otp}`
     }
     await transporter.sendMail(mailOptions);
-    await client.set(`otp : ${email}`,JSON.stringify(otp),{EX:60*5});
-    return res.status(200).json({ message: "OTP sent successfully", otp });
+    await client.set(`otp : ${email}`,JSON.stringify(otp),{EX:60*2});
+    return res.status(200).json({ message: "OTP sent successfully" });
     }
     catch(error){
         logger.error("Failed to send OTP", error.stack);

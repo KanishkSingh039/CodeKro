@@ -62,9 +62,17 @@ const GoogleAuthCallback=async(req,res)=>{
         });
         const payload=verifytokenid.getPayload();
         const tokeninfo=await OAuthclient.getTokenInfo(tokens.access_token);
-        const checktheexistinguserwiththisemail=await CodeKroUser.find({email:tokeninfo.email});
-        if(!checktheexistinguserwiththisemail.length){
+        const checktheexistinguserwiththisemail=await CodeKroUser.findOne({email:tokeninfo.email});
+        if(!checktheexistinguserwiththisemail){
+            const Addtheusertodb=await CodeKroUser.create({
+                email:payload.email,
+                username:payload.name,
+                name:payload.name,
+                picture:payload.picture,
+            });
+            console.log(Addtheusertodb);
             const jwtToken= jwt.sign({
+                id:Addtheusertodb._id,
                 email:payload.email,
                 username:payload.name,
                 picture:payload.picture,
@@ -74,13 +82,6 @@ const GoogleAuthCallback=async(req,res)=>{
                 JWTtoken:JSON.stringify(jwtToken),
                 GoogleAuthtoken:tokens,
             })
-            const Addtheusertodb=await CodeKroUser.create({
-                email:payload.email,
-                username:payload.name,
-                name:payload.name,
-                picture:payload.picture,
-            });
-            console.log(Addtheusertodb);
             
             return res.status(200).json({ message: "Google auth tokens",user:{
                 id:Addtheusertodb._id,
@@ -100,7 +101,7 @@ const GoogleAuthCallback=async(req,res)=>{
             picture:checktheexistinguserwiththisemail.picture,
             googleAuthToken:tokens,
             googlelogin:true
-    })
+    },process.env.JWT_SECRET,{expiresIn:"1h"})
         return res.status(200).json({ message: "Google auth tokens",user:{
                 id:checktheexistinguserwiththisemail._id,
                 name:checktheexistinguserwiththisemail.name,

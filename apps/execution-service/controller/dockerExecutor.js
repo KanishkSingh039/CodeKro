@@ -9,7 +9,7 @@ const os=require("os");
 const docker=new Docker({
     socketPath: "/Users/kanishk/.docker/run/docker.sock"
 });
-const dockerExecutor= async(language,input,code,problem)=>{
+const dockerExecutor= async(language,input,code,problem,timesup)=>{
     try {
         if(!language || !input || !code || !problem){
             logger.error("Invalid input",language,input,code,problem);
@@ -95,6 +95,7 @@ let languageCommands = {
             stdout,
             stderr
         );
+        
         await container.wait();
         if(fs.existsSync(path.join(workDir, "input.txt")))
         {
@@ -112,6 +113,7 @@ let languageCommands = {
         {
             fs.unlinkSync(path.join(workDir, "Main.class"));
         }
+        
         await container.remove({
             force: true
         });

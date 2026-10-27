@@ -4,12 +4,14 @@ const logger=require("@codekro/logger");
 const executionRouter=require("../routes/execution-router");
 const {connectredis}=require("@codekro/redis-config");
 const {connectToMongo}=require("@codekro/db_config");
+const {executionWorker}=require("../controller/executionWorker");
 const app=express();
 app.use(express.json());
 const PORT=process.env.PORT;
-app.use("/execution",executionRouter);
 connectToMongo();
 connectredis();
+executionWorker();
+app.use("/execution",executionRouter);
 app.get("/execution/health", (req, res) => {
     console.log(`Health request received on port ${PORT}`);
 
