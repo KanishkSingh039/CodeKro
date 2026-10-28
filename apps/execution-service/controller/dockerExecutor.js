@@ -6,6 +6,8 @@ const fsp=require("fs/promises");
 const fs=require("fs");
 const os=require("os");
 
+const EXECUTION_TIMEOUT_MS = 10_000;
+
 const docker=new Docker({
     socketPath: "/Users/kanishk/.docker/run/docker.sock"
 });
@@ -95,8 +97,20 @@ let languageCommands = {
             stdout,
             stderr
         );
-        
-        await container.wait();
+        let timeout;
+        const completed = await Promise.race([
+            container.wait().then(() => true),
+            new Promise(resolve => {
+                timeout = setTimeout(async () => {
+                    await container.kill().catch(() => undefined);
+                    resolve(false);
+                }, EXECUTION_TIMEOUT_MS);
+            })
+        ]);
+        clearTimeout(timeout);
+        if (!completed) {
+            error += "\nExecution timed out";
+        }
         if(fs.existsSync(path.join(workDir, "input.txt")))
         {
             fs.unlinkSync(path.join(workDir, "input.txt"));
@@ -117,6 +131,7 @@ let languageCommands = {
         await container.remove({
             force: true
         });
+        if (!completed) throw new Error("Execution timed out");
         return {output,error}
         
     } catch (error) {
