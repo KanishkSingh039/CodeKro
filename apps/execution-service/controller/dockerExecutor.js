@@ -12,6 +12,8 @@ const docker=new Docker({
     socketPath: "/Users/kanishk/.docker/run/docker.sock"
 });
 const dockerExecutor= async(language,input,code,problem,timesup)=>{
+    let workDir;
+    let container;
     try {
         if(!language || !input || !code || !problem){
             logger.error("Invalid input",language,input,code,problem);
@@ -23,7 +25,7 @@ const dockerExecutor= async(language,input,code,problem,timesup)=>{
         console.log("Directory created");
         });
 
-        const workDir=await fsp.mkdtemp(path.join(tempRootDir,`${problem.toString()}`));
+        workDir=await fsp.mkdtemp(path.join(tempRootDir,`${problem.toString()}`));
         
         fs.writeFileSync(path.join(workDir,"input.txt"),input);    
         fs.writeFileSync(path.join(workDir,`main.${language}`),code);
@@ -63,7 +65,7 @@ let languageCommands = {
         "java": `javac Main.java && java Main < input.txt`,
     };
     const command=languageCommands[language];
-    const container=await docker.createContainer({
+    container=await docker.createContainer({
       Image:`codekro/${language}`,
       WorkingDir:"/wdr",
       Cmd: ["sh","-c",command] ,
@@ -137,6 +139,9 @@ let languageCommands = {
     } catch (error) {
         logger.error("Docker execution failed", error.message);
         throw error;
+    } finally {
+        if (container) await container.remove({force:true}).catch(() => undefined);
+        if (workDir) await fsp.rm(workDir,{recursive:true,force:true}).catch(() => undefined);
     }
 }
 module.exports={dockerExecutor}

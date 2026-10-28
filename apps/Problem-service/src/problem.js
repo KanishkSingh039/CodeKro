@@ -9,9 +9,22 @@ const {problemgeneratorWorker}=require("../controller/problemGeneratorWorker.js"
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 5000;
-connectredis();
-connectToMongo();
-problemgeneratorWorker();
+await connectredis().catch((err)=>{
+    logger.error("Failed to connect to Redis",err.message);
+    throw err;
+});
+await connectToMongo().catch((err)=>{
+    logger.error("Failed to connect to MongoDB",err.message);
+    throw err;
+});
+const worker=await problemgeneratorWorker();
+if(worker && typeof worker?.waitUntilReady === 'function'){
+    await worker?.waitUntilReady().catch((err)=>{
+        logger.error("Failed to start worker",err.message);
+        throw err;
+    });
+    logger.info("problem worker is ready")
+}
 app.use("/problem", router);
 app.use("/problem",problemfetchrouter);
 app.get("/problem/health", (req, res) => {

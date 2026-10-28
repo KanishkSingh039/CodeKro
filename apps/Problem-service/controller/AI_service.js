@@ -1,12 +1,10 @@
 const logger = require("@codekro/logger");
 const {IOQueue}=require("../queue/queue");
-const {QueueEvents}=require("bullmq")
 const problemgeneratorQueue=IOQueue("problem-generator-queue");
-const {io_client}=require("@codekro/io-redis-config");
-const IOqueueEvents=new QueueEvents("problem-generator-queue",{connection:io_client});
-const AI_serviceController=async(req,res)=>{
+const AI_serviceController=async(req,res,next)=>{
     try {
-        const {user_id,service}=req.body;
+        const user_id = req.user?.id || req.body?.user_id;
+        const {service}=req.body;
         if(!user_id||!service)
         {
             logger.error("User_id/service is empty ")
@@ -17,19 +15,31 @@ const AI_serviceController=async(req,res)=>{
             service:service
         },
     {
-        jobId:`problem_${user_id}`,
-        removeOnComplete: true,
-        removeOnFail: true
+        removeOnComplete: {age: 3600},
+        removeOnFail: {age: 86400}
     });
-        
-        
-        const problem=await job.waitUntilFinished(IOqueueEvents,60000);
-        
-        logger.info("Problem generated", problem);
-        return res.status(200).json({ message: "Problem generated", problem });
+
+        return res.status(202).json({ message: "Problem generation queued", job_id: job.id });
     } catch (error) {
         logger.error("Failed to generate problem", error.message);
         res.status(500).json({ message: error.message });
     }
 }
-module.exports=AI_serviceController;
+const problemGenerationStatus=async(req,res)=>{
+    try {
+        const job=await problemgeneratorQueue.getJob(req.params.jobId);
+        if(!job) return res.status(404).json({message:"Problem generation job not found"});
+
+        const state=await job.getState();
+        return res.status(200).json({
+            job_id:job.id,
+            state,
+            problem:state==="completed" ? job.returnvalue : undefined,
+            error:state==="failed" ? job.failedReason : undefined
+        });
+    } catch(error) {
+        logger.error("Failed to get problem generation status",error.message);
+        return res.status(500).json({message:"Failed to get problem generation status"});
+    }
+}
+module.exports={AI_serviceController,problemGenerationStatus};

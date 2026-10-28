@@ -8,9 +8,19 @@ const {executionWorker}=require("../controller/executionWorker");
 const app=express();
 app.use(express.json());
 const PORT=process.env.PORT;
-connectToMongo();
-connectredis();
-executionWorker();
+await connectToMongo().catch((err)=>{
+    logger.error("Failed to connect to MongoDB",err.message);
+    throw err;
+});
+await connectredis().catch((err)=>{
+    logger.error("Failed to connect to Redis",err.message);
+    throw err;
+});
+const worker=await executionWorker();
+if(worker && typeof worker?.waitUntilReady === 'function'){
+    await worker?.waitUntilReady();
+    logger.info("execution worker is ready")
+}
 app.use("/execution",executionRouter);
 app.get("/execution/health", (req, res) => {
     console.log(`Health request received on port ${PORT}`);

@@ -11,13 +11,16 @@ app.use(express.json());
 app.use("/auth",registerRoute);
 app.use("/auth",loginRoute);
 app.use("/auth",otpRoute);
-connectredis().then(()=>{
+await connectredis().then(()=>{
     logger.info("Redis connected");
 }).catch((err)=>{
     logger.error(err);
     throw err;
 });
-connectToMongo()
+await connectToMongo().catch((err)=>{
+    logger.error(err);
+    throw err;
+});
 
 const PORT = process.env.PORT || 3011;
 

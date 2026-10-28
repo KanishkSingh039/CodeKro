@@ -25,7 +25,7 @@ const problemgeneratorWorker=async()=>{
     },
     {
         connection:io_client,
-        concurrency:1
+        concurrency:Number(process.env.PROBLEM_WORKER_CONCURRENCY) || 5
     })
 
      worker.on("error",(error)=>{
