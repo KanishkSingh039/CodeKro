@@ -1,5 +1,5 @@
-import React from 'react';
-import { Star, ChevronLeft, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { Star, AlertCircle, RefreshCw, Loader2 } from 'lucide-react';
 import StatusIcon from './StatusIcon';
 import DifficultyLabel from './DifficultyLabel';
 import Button from './Button';
@@ -7,7 +7,8 @@ import Button from './Button';
 /**
  * DataTable Component
  * Dense, calm developer problem list table with sticky headers, zebra/hover rows,
- * pagination, skeleton loading, empty state, and error handling.
+ * an internally scrollable body that loads more rows on scroll, skeleton loading,
+ * empty state, and error handling.
  */
 export default function DataTable({
   problems = [],
@@ -18,18 +19,34 @@ export default function DataTable({
   onBookmarkToggle,
   onProblemClick,
   onResetFilters,
-  pagination = {
-    page: 1,
-    totalPages: 1,
-    total: 0,
-    limit: 20,
-    onPageChange: () => {},
-  },
+  total = 0,
+  hasMore = false,
+  isLoadingMore = false,
+  onLoadMore,
 }) {
+  const scrollRef = useRef(null);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el || !hasMore || isLoadingMore || !onLoadMore) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 96) {
+      onLoadMore();
+    }
+  };
+
+  // If the loaded rows do not fill the scroll area yet, fetch the next page
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || isLoading || isError || !hasMore || isLoadingMore) return;
+    if (el.scrollHeight <= el.clientHeight) {
+      onLoadMore?.();
+    }
+  }, [problems.length, hasMore, isLoading, isLoadingMore, isError, onLoadMore]);
+
   // Skeleton Rows for loading state
   if (isLoading) {
     return (
-      <div className="w-full border border-border-default rounded-[var(--radius-sm)] overflow-hidden bg-bg-surface">
+      <div className="w-full border border-border-default rounded-[var(--radius-sm)] overflow-auto bg-bg-surface flex-1 min-h-0 max-h-[65vh] lg:max-h-none">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
@@ -127,14 +144,14 @@ export default function DataTable({
     );
   }
 
-  const { page, totalPages, total, limit, onPageChange } = pagination;
-  const startIdx = (page - 1) * limit + 1;
-  const endIdx = Math.min(page * limit, total);
-
   return (
-    <div className="w-full border border-border-default rounded-[var(--radius-sm)] overflow-hidden bg-bg-surface flex flex-col">
-      {/* Responsive Table / Cards container */}
-      <div className="overflow-x-auto">
+    <div className="w-full border border-border-default rounded-[var(--radius-sm)] overflow-hidden bg-bg-surface flex flex-col flex-1 min-h-0">
+      {/* Internally scrollable table region (loads more rows on scroll) */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 min-h-0 max-h-[65vh] lg:max-h-none overflow-auto overscroll-contain"
+      >
         <table className="w-full text-left border-collapse text-xs select-none">
           {/* Sticky Table Header */}
           <thead className="sticky top-0 z-10 bg-bg-surface border-b border-border-default">
@@ -247,43 +264,40 @@ export default function DataTable({
                 </tr>
               );
             })}
+
+            {isLoadingMore && (
+              <tr>
+                <td colSpan={7} className="py-3 px-3 text-center text-text-muted">
+                  <span className="inline-flex items-center gap-2 text-[11px]">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Loading more problems…
+                  </span>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
-      {/* Pagination Footer */}
-      <div className="px-4 py-2.5 border-t border-border-default bg-bg-surface-subtle flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-text-muted">
+      {/* Scroll-based loading footer */}
+      <div className="px-4 py-2.5 border-t border-border-default bg-bg-surface-subtle flex items-center justify-between gap-2 text-xs text-text-muted shrink-0">
         <div>
-          Showing <span className="font-mono text-text-secondary">{startIdx}</span>-
-          <span className="font-mono text-text-secondary">{endIdx}</span> of{' '}
+          Showing <span className="font-mono text-text-secondary">{problems.length}</span> of{' '}
           <span className="font-mono text-text-secondary">{total}</span>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => onPageChange(page - 1)}
-            aria-label="Previous page"
-            className="p-1 rounded border border-border-default bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
-          <span className="px-2 font-mono text-[11px] text-text-secondary">
-            Page {page} of {totalPages}
-          </span>
-
-          <button
-            type="button"
-            disabled={page >= totalPages}
-            onClick={() => onPageChange(page + 1)}
-            aria-label="Next page"
-            className="p-1 rounded border border-border-default bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+        <span className="inline-flex items-center gap-1.5 text-[11px]">
+          {isLoadingMore ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Loading…
+            </>
+          ) : hasMore ? (
+            'Scroll list for more'
+          ) : (
+            'All problems loaded'
+          )}
+        </span>
       </div>
     </div>
   );

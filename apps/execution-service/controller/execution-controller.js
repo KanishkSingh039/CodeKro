@@ -1,7 +1,7 @@
 const logger = require("@codekro/logger");
 const {IOQueue}=require("../queue/IOqueue");
 const {QueueEvents}=require("bullmq");
-const { io_client } = require("@codekro/redis-config");
+const { io_client } = require("@codekro/redisconfig");
 const IOqueue=IOQueue("problem-queue");
 const solutionQueue=IOQueue("solution-queue");
 const IOqueueEvents=new QueueEvents("problem-queue",{connection:io_client});

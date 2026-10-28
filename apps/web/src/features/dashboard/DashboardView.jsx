@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api';
 import GreetingRow from './GreetingRow';
 import TopicChips from './TopicChips';
@@ -102,17 +102,26 @@ export default function DashboardView({ onNavigateProblem }) {
     queryFn: apiClient.getMe,
   });
 
-  // 2. Problems list with pagination & filters
+  // 2. Problems list with filters, loaded page-by-page as the list is scrolled
   const {
     data: problemsData,
     isLoading: isProblemsLoading,
     isError: isProblemsError,
     error: problemsError,
     refetch: refetchProblems,
-  } = useQuery({
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['problems', filters],
-    queryFn: () => apiClient.getProblems(filters),
+    queryFn: ({ pageParam = 1 }) => apiClient.getProblems({ ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
   });
+
+  const problems = problemsData?.pages.flatMap((p) => p.problems) || [];
+  const totalProblems = problemsData?.pages[0]?.total || 0;
 
   // 3. User session stats
   const { data: userStats, isLoading: isStatsLoading } = useQuery({
@@ -156,11 +165,15 @@ export default function DashboardView({ onNavigateProblem }) {
     bookmarkMutation.mutate(problemId);
   };
 
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   // Pick random problem
   const handlePickRandom = () => {
-    if (problemsData?.problems && problemsData.problems.length > 0) {
-      const randomIndex = Math.floor(Math.random() * problemsData.problems.length);
-      const chosen = problemsData.problems[randomIndex];
+    if (problems.length > 0) {
+      const randomIndex = Math.floor(Math.random() * problems.length);
+      const chosen = problems[randomIndex];
       setRandomNotice(`Random problem selected: #${chosen.frontendQuestionId} ${chosen.title}`);
       setTimeout(() => setRandomNotice(null), 4000);
       if (onNavigateProblem) onNavigateProblem(chosen);
@@ -168,14 +181,16 @@ export default function DashboardView({ onNavigateProblem }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6 lg:h-[calc(100vh-6.5rem)] lg:min-h-0">
       {/* Top Greeting Row */}
-      <GreetingRow
-        user={user}
-        onContinueProblem={(p) => {
-          if (onNavigateProblem) onNavigateProblem(p);
-        }}
-      />
+      <div className="shrink-0">
+        <GreetingRow
+          user={user}
+          onContinueProblem={(p) => {
+            if (onNavigateProblem) onNavigateProblem(p);
+          }}
+        />
+      </div>
 
       {/* Random Notice Notification if triggered */}
       {randomNotice && (
@@ -192,11 +207,11 @@ export default function DashboardView({ onNavigateProblem }) {
       )}
 
       {/* Two Column Desktop Layout (8/4 Split) / Ordered Single Column on Mobile */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start lg:flex-1 lg:min-h-0 lg:items-stretch">
         {/* LEFT COLUMN: Main Problem Bank (8 cols on desktop) */}
-        <div className="lg:col-span-8 flex flex-col gap-4 order-3 lg:order-1">
+        <div className="lg:col-span-8 flex flex-col gap-4 order-3 lg:order-1 lg:min-h-0">
           {/* Topic Chips Row */}
-          <div className="border-b border-border-default pb-2">
+          <div className="border-b border-border-default pb-2 shrink-0">
             <TopicChips
               selectedTag={filters.tag || 'all'}
               onSelectTag={(tag) => updateFilters({ tag, page: 1 })}
@@ -204,17 +219,19 @@ export default function DashboardView({ onNavigateProblem }) {
           </div>
 
           {/* Filter Toolbar */}
-          <FilterBar
-            filters={filters}
-            onFilterChange={updateFilters}
-            onResetFilters={resetFilters}
-            onPickRandom={handlePickRandom}
-            totalResults={problemsData?.total || 0}
-          />
+          <div className="shrink-0">
+            <FilterBar
+              filters={filters}
+              onFilterChange={updateFilters}
+              onResetFilters={resetFilters}
+              onPickRandom={handlePickRandom}
+              totalResults={totalProblems}
+            />
+          </div>
 
-          {/* Core Problem List DataTable */}
+          {/* Core Problem List DataTable (scrolls internally, loads more rows) */}
           <DataTable
-            problems={problemsData?.problems || []}
+            problems={problems}
             isLoading={isProblemsLoading}
             isError={isProblemsError}
             errorMessage={problemsError?.message}
@@ -224,18 +241,15 @@ export default function DashboardView({ onNavigateProblem }) {
               if (onNavigateProblem) onNavigateProblem(p);
             }}
             onResetFilters={resetFilters}
-            pagination={{
-              page: problemsData?.page || 1,
-              totalPages: problemsData?.totalPages || 1,
-              total: problemsData?.total || 0,
-              limit: problemsData?.limit || 20,
-              onPageChange: (newPage) => updateFilters({ page: newPage }),
-            }}
+            total={totalProblems}
+            hasMore={Boolean(hasNextPage)}
+            isLoadingMore={isFetchingNextPage}
+            onLoadMore={handleLoadMore}
           />
         </div>
 
         {/* RIGHT COLUMN: Sidebar Stats & Daily (4 cols on desktop) */}
-        <div className="lg:col-span-4 flex flex-col gap-4 order-2 lg:order-2">
+        <div className="lg:col-span-4 flex flex-col gap-4 order-2 lg:order-2 lg:min-h-0 lg:overflow-y-auto overscroll-contain [&>*]:shrink-0">
           {/* 1. Session Progress Card */}
           <ProgressCard stats={userStats} isLoading={isStatsLoading} />
 
