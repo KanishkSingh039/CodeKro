@@ -2,6 +2,9 @@ const logger = require("@codekro/logger");
 const {client}=require("@codekro/redis-config");
 const {problem}=require('@codekro/db_config');
 
+const HISTORY_LIMIT=100;
+const HISTORY_TTL_SECONDS=30*24*60*60;
+
 const fetch_problem=async(req,res)=>{
     try {
         const user_id=req.user.id;
@@ -13,19 +16,26 @@ const fetch_problem=async(req,res)=>{
         const Problem=await client.lRange(`problem:${user_id}`,0,-1);
         if(Problem.length > 0)
         {
+            await client.lTrim(`problem:${user_id}`,-HISTORY_LIMIT,-1);
+            await client.expire(`problem:${user_id}`,HISTORY_TTL_SECONDS);
             logger.info("Problem fetched", Problem);
             return res.status(200).json({
                 message: "Problem fetched",
-                problem: Problem.map(item => JSON.parse(item))
+                problem: Problem.slice(-HISTORY_LIMIT).reverse().map(item => JSON.parse(item))
             });
         }
         logger.error("Cache miss");
-        const getProblemFromDB=await problem.find({user_id});
+        const getProblemFromDB=await problem.find({user_id}).sort({createdAt:-1,_id:-1});
         if(getProblemFromDB.length>0)
         {
-            await Promise.all(getProblemFromDB.map(item =>
-                client.rPush(`problem:${user_id}`,JSON.stringify(item))
-            ));
+            const cacheItems=getProblemFromDB.slice(0,HISTORY_LIMIT);
+            const cache=client.multi();
+            for(const item of cacheItems.slice().reverse()){
+                cache.rPush(`problem:${user_id}`,JSON.stringify(item));
+            }
+            cache.lTrim(`problem:${user_id}`,-HISTORY_LIMIT,-1);
+            cache.expire(`problem:${user_id}`,HISTORY_TTL_SECONDS);
+            await cache.exec();
         }
         else{
             logger.error("No problem found for user", user_id);

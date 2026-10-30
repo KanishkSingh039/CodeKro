@@ -5,6 +5,8 @@ const {prompt}=require("../AI_service/prompt")
 const {LLM_service}=require("../AI_service/LLm")
 const {problem}=require("@codekro/db_config")
 const logger=require("@codekro/logger")
+const HISTORY_LIMIT=100;
+const HISTORY_TTL_SECONDS=30*24*60*60;
 const problemgeneratorWorker=async()=>{
     const worker=new Worker("problem-generator-queue",async(job)=>{
         const {user_id,service}=job.data;
@@ -20,7 +22,11 @@ const problemgeneratorWorker=async()=>{
                     test_case:problemgenerated.test_case,
                     difficulty:problemgenerated.difficulty
                 })
-         await client.RPUSH(`problem:${user_id}`,JSON.stringify(SaveProblemAtDB.toObject()));
+         await client.multi()
+            .rPush(`problem:${user_id}`,JSON.stringify(SaveProblemAtDB.toObject()))
+            .lTrim(`problem:${user_id}`,-HISTORY_LIMIT,-1)
+            .expire(`problem:${user_id}`,HISTORY_TTL_SECONDS)
+            .exec();
             return SaveProblemAtDB;
     },
     {

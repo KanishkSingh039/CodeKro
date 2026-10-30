@@ -1316,7 +1316,7 @@ export const apiClient = {
    */
   async runCode({ problemId, lang, code, testcases }) {
     if (!API_CONFIG.USE_MOCK) {
-      return await request(`${API_CONFIG.EXECUTION_SERVICE_URL}${ENDPOINTS.EXECUTION.EXECUTE}`, {
+      const queued = await request(`${API_CONFIG.EXECUTION_SERVICE_URL}${ENDPOINTS.EXECUTION.EXECUTE}`, {
         method: 'POST',
         body: {
           user_id: apiClient.getCurrentUserId(),
@@ -1327,6 +1327,7 @@ export const apiClient = {
           test_case: testcases,
         },
       });
+      return { ...queued, submissionId: queued.job_id };
     }
     await new Promise((r) => setTimeout(r, 60));
     const submissionId = 'run_' + Math.random().toString(36).substring(2, 9);
@@ -1348,7 +1349,7 @@ export const apiClient = {
    */
   async submitCode({ problemId, lang, code }) {
     if (!API_CONFIG.USE_MOCK) {
-      return await request(`${API_CONFIG.EXECUTION_SERVICE_URL}${ENDPOINTS.EXECUTION.EXECUTE}`, {
+      const queued = await request(`${API_CONFIG.EXECUTION_SERVICE_URL}${ENDPOINTS.EXECUTION.EXECUTE}`, {
         method: 'POST',
         body: {
           user_id: apiClient.getCurrentUserId(),
@@ -1359,6 +1360,7 @@ export const apiClient = {
           test_case: [],
         },
       });
+      return { ...queued, submissionId: queued.job_id };
     }
     await new Promise((r) => setTimeout(r, 60));
     const submissionId = 'sub_' + Math.random().toString(36).substring(2, 9);
@@ -1378,6 +1380,70 @@ export const apiClient = {
    * Polls submission judge status with realistic cycle: Queued -> Running -> Accepted/WA
    */
   async getSubmissionStatus(submissionId) {
+    if (!API_CONFIG.USE_MOCK) {
+      const data = await request(`${API_CONFIG.EXECUTION_SERVICE_URL}${ENDPOINTS.EXECUTION.EXECUTE}/${submissionId}`);
+      const state = data.state;
+
+      if (state === 'waiting' || state === 'delayed' || state === 'prioritized') {
+        return { submissionId, status: 'Queued', message: 'In queue...', progress: 10 };
+      }
+      if (state === 'active') {
+        return { submissionId, status: 'Running', message: 'Running test cases...', progress: 50 };
+      }
+      if (state === 'failed') {
+        return {
+          submissionId,
+          status: 'Runtime Error',
+          runtimeError: data.error || 'Execution failed',
+          passedCases: 0,
+          totalCases: 0,
+        };
+      }
+      if (state !== 'completed') {
+        return {
+          submissionId,
+          status: 'Runtime Error',
+          runtimeError: 'Execution state unavailable',
+          passedCases: 0,
+          totalCases: 0,
+        };
+      }
+
+      const result = data.result || {};
+      const judgement = result.judgement && typeof result.judgement === 'object' ? result.judgement : {};
+      const verdict = judgement.verdict || 'UNKNOWN';
+      const statusByVerdict = {
+        ACCEPTED: 'Accepted',
+        WRONG_ANSWER: 'Wrong Answer',
+        TIME_LIMIT_EXCEEDED: 'Time Limit Exceeded',
+        MEMORY_LIMIT_EXCEEDED: 'Memory Limit Exceeded',
+        RUNTIME_ERROR: 'Runtime Error',
+        COMPILATION_ERROR: 'Compile Error',
+      };
+      const score = judgement.score || {};
+      const testResults = Array.isArray(judgement.testCases)
+        ? judgement.testCases.map((testCase, index) => ({
+            id: `case-${index + 1}`,
+            input: '',
+            expectedOutput: '',
+            actualOutput: '',
+            isPassed: Boolean(testCase.passed),
+            stdout: '',
+          }))
+        : [];
+
+      return {
+        submissionId,
+        status: statusByVerdict[verdict] || 'Unknown',
+        passedCases: score.passed ?? 0,
+        totalCases: score.total ?? 0,
+        stdout: result.output || '',
+        compileError: verdict === 'COMPILATION_ERROR' ? result.error || 'Compilation failed' : undefined,
+        runtimeError: verdict === 'RUNTIME_ERROR' ? result.error || 'Runtime error' : undefined,
+        testResults,
+      };
+    }
+
     await new Promise((r) => setTimeout(r, 80));
     const sub = apiClient._mockSubmissions.get(submissionId);
     const now = Date.now();

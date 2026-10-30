@@ -24,9 +24,27 @@ const register=async(req,res)=>{
             username,
             password:hashepassword,
         });
-        logger.info(`User created successfully ${user}`)
-        return res.status(201).json({message:"User created successfully",user});
+        logger.info(`User created successfully ${{user:{
+            user_id:user._id,
+            name:user.name,
+            email:user.email,
+            username:user.username,
+        }}}`)
+        return res.status(201).json({message:"User created successfully",user:{
+            user_id:user._id,
+            name:user.name,
+            email:user.email,
+            username:user.username,
+        }});
     } catch (error) {
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern || {})[0] || "Field";
+            return res.status(409).json({ message: `${field} already exists` });
+        }
+        if (error.name === "ValidationError") {
+            const firstError = Object.values(error.errors)[0];
+            return res.status(400).json({ message: firstError?.message || "Invalid input" });
+        }
         logger.error(error.message)
         return res.status(500).json({message:"Internal server error"});
     }

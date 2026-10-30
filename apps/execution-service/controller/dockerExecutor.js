@@ -1,5 +1,6 @@
 const logger=require("@codekro/logger");
 const Docker=require("dockerode");
+const {createHash}=require("crypto");
 const path=require("path");
 const {PassThrough}=require("stream");
 const fsp=require("fs/promises");
@@ -19,6 +20,60 @@ const docker=new Docker(
         ? { socketPath: process.env.DOCKER_SOCKET_PATH }
         : {}
 );
+
+const imagePromises=new Map();
+
+const ensureImage=async(language)=>{
+    const imagePath=path.resolve(__dirname,"../","image",language);
+    const dockerfilePath=path.join(imagePath,"dockerfile");
+    const dockerfile=await fsp.readFile(dockerfilePath);
+    const hash=createHash("sha256").update(dockerfile).digest("hex").slice(0,12);
+    const tag=`codekro/${language}:${hash}`;
+    const cacheKey=`${language}:${hash}`;
+
+    if(imagePromises.has(cacheKey)){
+        return imagePromises.get(cacheKey);
+    }
+
+    const promise=(async()=>{
+        try{
+            await docker.getImage(tag).inspect();
+            return tag;
+        }catch(error){
+            if(error.statusCode!==404 && !/no such image/i.test(error.message || "")){
+                throw error;
+            }
+        }
+
+        logger.info(`Building docker image ${tag}`);
+        const stream=await docker.buildImage(
+            {
+                context:imagePath,
+                src:["dockerfile"],
+            },
+            {
+                t:tag,
+                dockerfile:"dockerfile",
+            }
+        );
+
+        await new Promise((resolve,reject)=>{
+            docker.modem.followProgress(stream,(err,res)=>{
+                if(err) reject(err);
+                else resolve(res);
+            });
+        });
+        logger.info(`Docker image ready ${tag}`);
+        return tag;
+    })().catch(error=>{
+        imagePromises.delete(cacheKey);
+        throw error;
+    });
+
+    imagePromises.set(cacheKey,promise);
+    return promise;
+};
+
 const dockerExecutor= async(language,input,code,problem,timesup)=>{
     let workDir;
     let container;
@@ -42,39 +97,11 @@ const dockerExecutor= async(language,input,code,problem,timesup)=>{
         
         fs.writeFileSync(path.join(workDir,"input.txt"),input);    
         fs.writeFileSync(path.join(workDir,languageConfig.file),code);
-        const imagePath = path.resolve(
-            __dirname,
-            "../",
-            "image",
-            language
-        );
+        const imageTag=await ensureImage(language);
 
-        const stream= await docker.buildImage({
-            context:imagePath,
-            src:["dockerfile"],
-            
-        },
-        {
-            t:`codekro/${language}`
-        }
-    )
-    
-    await new Promise((resolve, reject) => {
-    docker.modem.followProgress(
-        stream,
-        (err, res) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            
-            resolve(res);
-        }
-    );
-});
     const command=languageConfig.command;
     container=await docker.createContainer({
-      Image:`codekro/${language}`,
+      Image:imageTag,
       WorkingDir:"/wdr",
       Cmd: ["sh","-c",command] ,
       HostConfig:{

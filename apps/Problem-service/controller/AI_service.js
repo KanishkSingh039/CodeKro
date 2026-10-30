@@ -30,6 +30,10 @@ const problemGenerationStatus=async(req,res)=>{
         const job=await problemgeneratorQueue.getJob(req.params.jobId);
         if(!job) return res.status(404).json({message:"Problem generation job not found"});
 
+        if(job.data.user_id !== req.user.id) {
+            return res.status(404).json({message:"Problem generation job not found"});
+        }
+
         const state=await job.getState();
         return res.status(200).json({
             job_id:job.id,
