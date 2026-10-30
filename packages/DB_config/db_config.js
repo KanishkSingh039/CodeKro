@@ -9,7 +9,7 @@ const connectToMongo=async()=>{
         logger.error("MONGO_URL is not defined");
         throw new Error("MONGO_URL is not defined");
     }
-    mongoose.connect(MONGO_URL).then(()=>{
+    await mongoose.connect(MONGO_URL).then(()=>{
         logger.info("Database connected");
     }).catch((err)=>{
         logger.error(err);

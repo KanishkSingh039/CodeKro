@@ -32,27 +32,33 @@ const authenticate=async (req,res,next)=>{
     }
     try {
         const UserDetailsThroughToken=jwt.verify(JWTtoken,process.env.JWT_SECRET);
-    if(UserDetailsThroughToken.googlelogin)
-    {
-    const GoogleAuthtoken=req.headers.googleauthtoken;
-    if(!GoogleAuthtoken){
-        return res.status(401).json({
-            message:"No google auth token provided"
-        })
-    }
-    try {
-        const tokeninfo= await OAuthclient.getTokenInfo(GoogleAuthtoken);
+    // if(UserDetailsThroughToken.googlelogin)
+    // {
+    // const GoogleAuthtoken=req.headers.googleauthtoken;
+    // if(!GoogleAuthtoken){
+    //     return res.status(401).json({
+    //         message:"No google auth token provided"
+    //     })
+    // }
+    // try {
+    //     const tokeninfo= await OAuthclient.getTokenInfo(GoogleAuthtoken);
         
-        if(!tokeninfo){
-            return res.status(401).json({
-                message:"Invalid google auth token"
-            })
-        }
-    } catch (error) {
+    //     if(!tokeninfo){
+    //         return res.status(401).json({
+    //             message:"Invalid google auth token"
+    //         })
+    //     }
+    // } catch (error) {
+    //     return res.status(401).json({
+    //         message:"Invalid google auth token"
+    //     })
+    // }
+    // }
+    if(!UserDetailsThroughToken)
+    {
         return res.status(401).json({
-            message:"Invalid google auth token"
+            message:"Invalid or expired token"
         })
-    }
     }
     
     req.user=UserDetailsThroughToken;

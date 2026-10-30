@@ -11,17 +11,6 @@ app.use(express.json());
 app.use("/auth",registerRoute);
 app.use("/auth",loginRoute);
 app.use("/auth",otpRoute);
-await connectredis().then(()=>{
-    logger.info("Redis connected");
-}).catch((err)=>{
-    logger.error(err);
-    throw err;
-});
-await connectToMongo().catch((err)=>{
-    logger.error(err);
-    throw err;
-});
-
 const PORT = process.env.PORT || 3011;
 
 app.get("/auth/health", (req, res) => {
@@ -34,7 +23,20 @@ app.get("/auth/health", (req, res) => {
     });
 });
 
-app.listen(process.env.PORT,()=>{
-    logger.info(`Auth service started on port ${process.env.PORT}`);
-})
+const start = async () => {
+    try {
+        await connectredis();
+        logger.info("Redis connected");
+        await connectToMongo();
+    } catch (err) {
+        logger.error(err.stack || err.message || String(err));
+        process.exit(1);
+    }
+
+    app.listen(PORT, () => {
+        logger.info(`Auth service started on port ${PORT}`);
+    });
+};
+
+start();
 module.exports=app;

@@ -9,22 +9,6 @@ const {problemgeneratorWorker}=require("../controller/problemGeneratorWorker.js"
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 5000;
-await connectredis().catch((err)=>{
-    logger.error("Failed to connect to Redis",err.message);
-    throw err;
-});
-await connectToMongo().catch((err)=>{
-    logger.error("Failed to connect to MongoDB",err.message);
-    throw err;
-});
-const worker=await problemgeneratorWorker();
-if(worker && typeof worker?.waitUntilReady === 'function'){
-    await worker?.waitUntilReady().catch((err)=>{
-        logger.error("Failed to start worker",err.message);
-        throw err;
-    });
-    logger.info("problem worker is ready")
-}
 app.use("/problem", router);
 app.use("/problem",problemfetchrouter);
 app.get("/problem/health", (req, res) => {
@@ -36,13 +20,29 @@ app.get("/problem/health", (req, res) => {
         instance: PORT
     });
 });
-const server=app.listen(PORT, () => {
-    logger.info(`Problem service is running on port ${PORT}`);
-})
-server.on("error", (error) => {
-    console.error("SERVER ERROR:", error);
-});
 
-server.on("close", () => {
-    console.log("SERVER CLOSED");
-});
+const start = async () => {
+    try {
+        await connectredis();
+        await connectToMongo();
+        const worker=await problemgeneratorWorker();
+        if(worker && typeof worker?.waitUntilReady === 'function'){
+            await worker.waitUntilReady();
+            logger.info("problem worker is ready");
+        }
+        const server=app.listen(PORT, () => {
+            logger.info(`Problem service is running on port ${PORT}`);
+        });
+        server.on("error", (error) => {
+            logger.error(`SERVER ERROR: ${error.stack || error.message}`);
+        });
+        server.on("close", () => {
+            logger.info("SERVER CLOSED");
+        });
+    } catch (err) {
+        logger.error(`Problem service failed to start: ${err.stack || err.message || String(err)}`);
+        process.exit(1);
+    }
+};
+
+start();

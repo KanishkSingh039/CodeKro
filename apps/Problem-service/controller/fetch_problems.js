@@ -4,7 +4,7 @@ const {problem}=require('@codekro/db_config');
 
 const fetch_problem=async(req,res)=>{
     try {
-        const {user_id}=req.body;
+        const user_id=req.user.id;
         if(!user_id)
         {
             logger.error("User_id is empty ")

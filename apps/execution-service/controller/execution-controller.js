@@ -1,9 +1,9 @@
 const logger = require("@codekro/logger");
+const { randomUUID } = require("crypto");
 const {IOQueue}=require("../queue/IOqueue");
 const {QueueEvents}=require("bullmq");
-const { io_client } = require("@codekro/redisconfig");
+const { io_client } = require("@codekro/io-redis-config");
 const IOqueue=IOQueue("problem-queue");
-const solutionQueue=IOQueue("solution-queue");
 const IOqueueEvents=new QueueEvents("problem-queue",{connection:io_client});
 const execution = async (req, res) => {
     try {
@@ -13,7 +13,7 @@ const execution = async (req, res) => {
             return res.status(400).json({ message: "Bad Request" });
         if (!code || !language || !input)
             return res.status(400).json({ message: "Bad Request" });
-        const problemqueuejobId=`${user_id}_${problem_id}`;
+        const jobId=randomUUID();
         const job=await IOqueue.add("code-submit",{
             code:code,
             language:language,
@@ -23,7 +23,7 @@ const execution = async (req, res) => {
             problem:problem_id,
         },
         {
-            jobId:problemqueuejobId,
+            jobId,
         }
     );
     

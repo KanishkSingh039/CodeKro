@@ -89,8 +89,7 @@ const GoogleAuthCallback=async(req,res)=>{
                 name:payload.name,
                 email:payload.email,
                 picture:payload.picture,
-                token:jwtToken,
-                googleAuthToken:tokens
+                token:jwtToken
             } });
         }
         const jwtToken= jwt.sign({
@@ -99,7 +98,6 @@ const GoogleAuthCallback=async(req,res)=>{
             username:checktheexistinguserwiththisemail.username,
             email:checktheexistinguserwiththisemail.email,
             picture:checktheexistinguserwiththisemail.picture,
-            googleAuthToken:tokens,
             googlelogin:true
     },process.env.JWT_SECRET,{expiresIn:"1h"})
         return res.status(200).json({ message: "Google auth tokens",user:{
@@ -108,9 +106,7 @@ const GoogleAuthCallback=async(req,res)=>{
                 username:checktheexistinguserwiththisemail.username,
                 email:checktheexistinguserwiththisemail.email,
                 picture:checktheexistinguserwiththisemail.picture,
-                token:jwtToken,
-                googleAuthToken:tokens,
-                googlelogin:true
+                token:jwtToken,                googlelogin:true
             } });
     } catch (error) {
         logger.error("Failed to google auth callback", error);

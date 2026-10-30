@@ -8,9 +8,17 @@ const os=require("os");
 
 const EXECUTION_TIMEOUT_MS = 10_000;
 
-const docker=new Docker({
-    socketPath: "/Users/kanishk/.docker/run/docker.sock"
-});
+const LANGUAGES = {
+    cpp: { file: "main.cpp", command: "g++ main.cpp -o program && ./program < input.txt" },
+    py: { file: "main.py", command: "python3 main.py < input.txt" },
+    java: { file: "Main.java", command: "javac Main.java && java Main < input.txt" },
+};
+
+const docker=new Docker(
+    process.env.DOCKER_SOCKET_PATH
+        ? { socketPath: process.env.DOCKER_SOCKET_PATH }
+        : {}
+);
 const dockerExecutor= async(language,input,code,problem,timesup)=>{
     let workDir;
     let container;
@@ -18,6 +26,11 @@ const dockerExecutor= async(language,input,code,problem,timesup)=>{
         if(!language || !input || !code || !problem){
             logger.error("Invalid input",language,input,code,problem);
             throw new Error("Invalid input");
+        }
+        const languageConfig=LANGUAGES[language];
+        if(!languageConfig){
+            logger.error(`Unsupported language: ${language}`);
+            throw new Error(`Unsupported language: ${language}`);
         }
         const tempRootDir=path.join(os.tmpdir(),"codekro");
         await fsp.mkdir(tempRootDir, { recursive: true },(err) => {
@@ -28,7 +41,7 @@ const dockerExecutor= async(language,input,code,problem,timesup)=>{
         workDir=await fsp.mkdtemp(path.join(tempRootDir,`${problem.toString()}`));
         
         fs.writeFileSync(path.join(workDir,"input.txt"),input);    
-        fs.writeFileSync(path.join(workDir,`main.${language}`),code);
+        fs.writeFileSync(path.join(workDir,languageConfig.file),code);
         const imagePath = path.resolve(
             __dirname,
             "../",
@@ -59,12 +72,7 @@ const dockerExecutor= async(language,input,code,problem,timesup)=>{
         }
     );
 });
-let languageCommands = {
-        "cpp": `g++ main.cpp -o program && ./program < input.txt`,
-        "py": `python3 main.py < input.txt`,
-        "java": `javac Main.java && java Main < input.txt`,
-    };
-    const command=languageCommands[language];
+    const command=languageConfig.command;
     container=await docker.createContainer({
       Image:`codekro/${language}`,
       WorkingDir:"/wdr",
@@ -117,9 +125,9 @@ let languageCommands = {
         {
             fs.unlinkSync(path.join(workDir, "input.txt"));
         }
-        if(fs.existsSync(path.join(workDir, `main.${language}`)))
+        if(fs.existsSync(path.join(workDir, languageConfig.file)))
         {
-            fs.unlinkSync(path.join(workDir, `main.${language}`));
+            fs.unlinkSync(path.join(workDir, languageConfig.file));
         }
         if(fs.existsSync(path.join(workDir, "program")))
         {
