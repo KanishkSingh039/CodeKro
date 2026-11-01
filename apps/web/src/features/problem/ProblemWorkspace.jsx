@@ -136,6 +136,7 @@ export default function ProblemWorkspace({
         problemId: problem.id,
         lang: language,
         code,
+        testcases: testCases,
       }),
   });
 

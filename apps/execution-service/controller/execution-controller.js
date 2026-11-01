@@ -6,16 +6,16 @@ const execution = async (req, res) => {
     try {
         const { problem_id, code, language, input ,test_case } = req.body;
         const user_id=req.user.id;
-        if(!user_id || !problem_id)
+        if(!user_id || !problem_id || !code || !language)
             return res.status(400).json({ message: "Bad Request" });
-        if (!code || !language || !input)
-            return res.status(400).json({ message: "Bad Request" });
+        const normalizedInput=typeof input==="string" ? input : input==null ? "" : JSON.stringify(input);
+        const normalizedTestCases=Array.isArray(test_case) ? test_case : [];
         const jobId=randomUUID();
         const job=await IOqueue.add("code-submit",{
             code:code,
             language:language,
-            input:input,
-            test_case:test_case,
+            input:normalizedInput,
+            test_case:normalizedTestCases,
             user:user_id,
             problem:problem_id,
         },

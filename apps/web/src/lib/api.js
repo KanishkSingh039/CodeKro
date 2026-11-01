@@ -1347,7 +1347,7 @@ export const apiClient = {
    * POST /api/problems/:id/submit
    * Integrates with POST /execution/service
    */
-  async submitCode({ problemId, lang, code }) {
+  async submitCode({ problemId, lang, code, testcases }) {
     if (!API_CONFIG.USE_MOCK) {
       const queued = await request(`${API_CONFIG.EXECUTION_SERVICE_URL}${ENDPOINTS.EXECUTION.EXECUTE}`, {
         method: 'POST',
@@ -1356,8 +1356,8 @@ export const apiClient = {
           problem_id: problemId,
           code,
           language: lang,
-          input: '',
-          test_case: [],
+          input: testcases?.[0]?.input ?? '',
+          test_case: testcases ?? [],
         },
       });
       return { ...queued, submissionId: queued.job_id };
