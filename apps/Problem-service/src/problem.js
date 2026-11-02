@@ -2,6 +2,7 @@ require('dotenv').config();
 const logger = require('@codekro/logger');
 const express = require('express');
 const router = require('../routes/problem_router.js');
+const {validateAuthConfig} = require('@codekro/authentication-middleware');
 const {connectredis}=require("@codekro/redis-config");
 const problemfetchrouter=require('../routes/FetchProblem.js')
 const {connectToMongo}=require("@codekro/db_config");
@@ -23,6 +24,7 @@ app.get("/problem/health", (req, res) => {
 
 const start = async () => {
     try {
+        validateAuthConfig();
         await connectredis();
         await connectToMongo();
         const worker=await problemgeneratorWorker();

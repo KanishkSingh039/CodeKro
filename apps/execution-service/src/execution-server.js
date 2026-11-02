@@ -5,6 +5,7 @@ const executionRouter=require("../routes/execution-router");
 const {connectredis}=require("@codekro/redis-config");
 const {connectToMongo}=require("@codekro/db_config");
 const {executionWorker}=require("../controller/executionWorker");
+const {validateAuthConfig}=require("@codekro/authentication-middleware");
 const app=express();
 app.use(express.json());
 const PORT=process.env.PORT;
@@ -22,6 +23,7 @@ app.get("/execution/health", (req, res) => {
 
 const start = async () => {
     try {
+        validateAuthConfig();
         await connectToMongo();
         await connectredis();
         const worker=await executionWorker();

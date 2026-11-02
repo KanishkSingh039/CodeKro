@@ -3,6 +3,7 @@ const express=require("express");
 const logger=require('@codekro/logger');
 const {connectredis}=require('@codekro/redis-config');
 const {connectToMongo}=require('@codekro/db_config');
+const {validateAuthConfig}=require('@codekro/authentication-middleware');
 const app=express();
 const registerRoute=require("../routes/register");
 const loginRoute=require("../routes/login");
@@ -25,6 +26,7 @@ app.get("/auth/health", (req, res) => {
 
 const start = async () => {
     try {
+        validateAuthConfig();
         await connectredis();
         logger.info("Redis connected");
         await connectToMongo();

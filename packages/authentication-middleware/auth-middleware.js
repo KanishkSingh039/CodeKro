@@ -1,6 +1,12 @@
 require("dotenv").config();
 const jwt=require("jsonwebtoken");
 
+const validateAuthConfig=()=>{
+    if(!process.env.JWT_SECRET){
+        throw new Error("JWT_SECRET is not defined");
+    }
+}
+
 const authenticate=(req,res,next)=>{
     const token=req.headers.authorization;
     if(!token || !token.startsWith('Bearer ')){
@@ -23,4 +29,4 @@ const authenticate=(req,res,next)=>{
         })
     }
 }
-module.exports={authenticate};
+module.exports={authenticate,validateAuthConfig};
