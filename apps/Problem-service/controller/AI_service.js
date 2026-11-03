@@ -1,14 +1,19 @@
 const logger = require("@codekro/logger");
 const {IOQueue}=require("../queue/queue");
+const {MAX_SERVICE_CHARS}=require("../AI_service/prompt");
 const problemgeneratorQueue=IOQueue("problem-generator-queue");
 const AI_serviceController=async(req,res,next)=>{
     try {
-        const user_id = req.user?.id || req.body?.user_id;
-        const {service}=req.body;
+        const user_id = req.user?.id;
+        const service = typeof req.body?.service === "string" ? req.body.service.trim() : "";
         if(!user_id||!service)
         {
             logger.error("User_id/service is empty ")
             return res.status(400).json({ message: "Bad Request" });
+        }
+        if(service.length>MAX_SERVICE_CHARS)
+        {
+            return res.status(400).json({ message: `service must be at most ${MAX_SERVICE_CHARS} characters` });
         }
         const job=await problemgeneratorQueue.add("problem-generator",{
             user_id:user_id,

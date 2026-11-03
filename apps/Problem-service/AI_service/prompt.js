@@ -1,20 +1,67 @@
 const logger = require("@codekro/logger");
+
+const MAX_SERVICE_CHARS = 2000;
+const MAX_HISTORY_ITEMS = 50;
+const MAX_DESCRIPTION_ITEMS = 10;
+const MAX_HISTORY_CHARS = 6000;
+const MAX_TITLE_CHARS = 100;
+const MAX_DESCRIPTION_CHARS = 200;
+
+const normalizeText = (value) => String(value ?? "").replace(/\s+/g, " ").trim();
+
+const truncate = (value, maxLength) => {
+    const text = normalizeText(value);
+    return text.length > maxLength ? `${text.slice(0, maxLength - 3)}...` : text;
+};
+
+const formatHistory = (history) => {
+    if (!Array.isArray(history) || history.length === 0) {
+        return "No previous problems provided.";
+    }
+
+    const lines = [];
+    let usedCharacters = 0;
+
+    for (const [index, item] of history.slice(0, MAX_HISTORY_ITEMS).entries()) {
+        const title = truncate(item?.title, MAX_TITLE_CHARS);
+        if (!title) continue;
+
+        const difficulty = normalizeText(item?.difficulty).toLowerCase() || "unknown";
+        const description = index < MAX_DESCRIPTION_ITEMS
+            ? truncate(item?.description, MAX_DESCRIPTION_CHARS)
+            : "";
+        const line = `- [${difficulty}] ${title}${description ? ` - ${description}` : ""}`;
+
+        if (usedCharacters + line.length > MAX_HISTORY_CHARS) break;
+
+        lines.push(line);
+        usedCharacters += line.length + 1;
+    }
+
+    return lines.length > 0 ? lines.join("\n") : "No previous problems provided.";
+};
+
 const prompt=(service,history)=>{
     try {
-        if(!service)
+        const normalizedService = truncate(service, MAX_SERVICE_CHARS);
+        if(!normalizedService)
         {
             logger.error("Service not provided")
             return "Service not provided";
         }
-        
+
+        const historySummary = Array.isArray(history)
+            ? formatHistory(history)
+            : truncate(history, MAX_HISTORY_CHARS) || "No previous problems provided.";
+
             return `
 You are an expert DSA problem setter for a coding platform similar to LeetCode.
 
 USER REQUEST:
-${service}
+${normalizedService}
 
 PREVIOUSLY GENERATED PROBLEMS:
-${history || "No previous problems provided."}
+${historySummary}
 
 UNIQUENESS REQUIREMENTS:
 
@@ -71,4 +118,4 @@ Return exactly one problem, not a list of problems.
         return error;
     }
 } 
-module.exports={prompt}; 
+module.exports={prompt,formatHistory,MAX_SERVICE_CHARS,MAX_HISTORY_CHARS};

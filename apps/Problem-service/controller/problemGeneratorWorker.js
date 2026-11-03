@@ -1,20 +1,15 @@
 const {Worker}=require("bullmq")
 const {io_client}=require("@codekro/io-redis-config")
-const {client}=require("@codekro/redis-config")
 const {prompt}=require("../AI_service/prompt")
 const {LLM_service}=require("../AI_service/LLm")
 const {problem}=require("@codekro/db_config")
+const {getProblemsForPrompt,refreshProblemHistory}=require("../history/problemHistory")
 const logger=require("@codekro/logger")
-const HISTORY_LIMIT=100;
-const HISTORY_TTL_SECONDS=30*24*60*60;
 const problemgeneratorWorker=async()=>{
     const worker=new Worker("problem-generator-queue",async(job)=>{
         const {user_id,service}=job.data;
-        const solvedquestionofuser=await client.LRANGE(`problem:${user_id}`,0,-1);
-        const history=solvedquestionofuser?.map(item=>{
-            return JSON.parse(item);
-        })
-                const problemgenerated=await LLM_service(prompt(service,history));
+        const history=await getProblemsForPrompt(user_id);
+        const problemgenerated=await LLM_service(prompt(service,history));
         const SaveProblemAtDB=await problem.create({
                     user_id:user_id,
                     title:problemgenerated.title,
@@ -22,11 +17,7 @@ const problemgeneratorWorker=async()=>{
                     test_case:problemgenerated.test_case,
                     difficulty:problemgenerated.difficulty
                 })
-         await client.multi()
-            .rPush(`problem:${user_id}`,JSON.stringify(SaveProblemAtDB.toObject()))
-            .lTrim(`problem:${user_id}`,-HISTORY_LIMIT,-1)
-            .expire(`problem:${user_id}`,HISTORY_TTL_SECONDS)
-            .exec();
+            await refreshProblemHistory(user_id);
             return SaveProblemAtDB;
     },
     {
