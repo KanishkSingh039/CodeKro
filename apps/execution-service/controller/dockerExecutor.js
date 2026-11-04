@@ -4,7 +4,6 @@ const {createHash}=require("crypto");
 const path=require("path");
 const {PassThrough}=require("stream");
 const fsp=require("fs/promises");
-const fs=require("fs");
 const os=require("os");
 
 const DEFAULT_EXECUTION_TIMEOUT_MS = 10_000;
@@ -88,15 +87,21 @@ const dockerExecutor= async(language,input,code,problem,timeoutMs = DEFAULT_EXEC
             throw new Error(`Unsupported language: ${language}`);
         }
         const tempRootDir=path.join(os.tmpdir(),"codekro");
-        await fsp.mkdir(tempRootDir, { recursive: true },(err) => {
-        if (err) throw err;
-        console.log("Directory created");
-        });
+        // fsp.mkdir returns a Promise — do NOT pass a callback (that's the old
+        // fs.mkdir signature). With { recursive: true } it resolves to the first
+        // directory created, or undefined if it already existed. No error is
+        // thrown when the directory already exists.
+        await fsp.mkdir(tempRootDir, { recursive: true });
 
         workDir=await fsp.mkdtemp(path.join(tempRootDir,`${problem.toString()}`));
-        
-        fs.writeFileSync(path.join(workDir,"input.txt"),input);    
-        fs.writeFileSync(path.join(workDir,languageConfig.file),code);
+
+        // Write source files asynchronously — fsp.writeFile yields to the event
+        // loop while the OS writes the buffer, keeping other BullMQ heartbeats
+        // and HTTP handlers running during concurrent submissions.
+        await Promise.all([
+            fsp.writeFile(path.join(workDir,"input.txt"), input),
+            fsp.writeFile(path.join(workDir,languageConfig.file), code),
+        ]);
         const imageTag=await ensureImage(language);
 
     const command=languageConfig.command;
@@ -148,23 +153,14 @@ const dockerExecutor= async(language,input,code,problem,timeoutMs = DEFAULT_EXEC
         if (!completed) {
             error += "\nExecution timed out";
         }
-        if(fs.existsSync(path.join(workDir, "input.txt")))
-        {
-            fs.unlinkSync(path.join(workDir, "input.txt"));
-        }
-        if(fs.existsSync(path.join(workDir, languageConfig.file)))
-        {
-            fs.unlinkSync(path.join(workDir, languageConfig.file));
-        }
-        if(fs.existsSync(path.join(workDir, "program")))
-        {
-            fs.unlinkSync(path.join(workDir, "program"));
-        }
-        if(fs.existsSync(path.join(workDir, "Main.class")))
-        {
-            fs.unlinkSync(path.join(workDir, "Main.class"));
-        }
-        
+
+        // Individual file cleanup is intentionally omitted here.
+        // The finally block below runs fsp.rm(workDir, { recursive: true })
+        // unconditionally — it removes the entire temp directory whether the
+        // job succeeded, timed out, or threw. Calling existsSync/unlinkSync
+        // per-file before that point would:
+        //   1. block the event loop synchronously on every submission, and
+        //   2. do work that the finally already does for free.
         await container.remove({
             force: true
         });
