@@ -7,7 +7,7 @@ const fsp=require("fs/promises");
 const fs=require("fs");
 const os=require("os");
 
-const EXECUTION_TIMEOUT_MS = 10_000;
+const DEFAULT_EXECUTION_TIMEOUT_MS = 10_000;
 
 const LANGUAGES = {
     cpp: { file: "main.cpp", command: "g++ main.cpp -o program && ./program < input.txt" },
@@ -74,7 +74,7 @@ const ensureImage=async(language)=>{
     return promise;
 };
 
-const dockerExecutor= async(language,input,code,problem,timesup)=>{
+const dockerExecutor= async(language,input,code,problem,timeoutMs = DEFAULT_EXECUTION_TIMEOUT_MS)=>{
     let workDir;
     let container;
     try {
@@ -141,7 +141,7 @@ const dockerExecutor= async(language,input,code,problem,timesup)=>{
                 timeout = setTimeout(async () => {
                     await container.kill().catch(() => undefined);
                     resolve(false);
-                }, EXECUTION_TIMEOUT_MS);
+                }, timeoutMs);
             })
         ]);
         clearTimeout(timeout);

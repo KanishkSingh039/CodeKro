@@ -1,4 +1,5 @@
 const {Worker}=require("bullmq");
+const EXECUTION_TIMEOUT_MS = parseInt(process.env.EXECUTION_TIMEOUT_MS ?? "10000", 10);
 const {dockerExecutor}=require("./dockerExecutor");
 const {judgementService}=require("./judgementService_controller");
 const {io_client}=require("@codekro/io-redis-config");
@@ -12,7 +13,7 @@ const executionWorker=async()=>{
             try {
                 const existingSolution=await Solution.findOne({job_id:job.id});
                 if(existingSolution) return existingSolution;
-                const {output,error}=await dockerExecutor(language,input,code,problem,timesup=3000);
+                const {output,error}=await dockerExecutor(language,input,code,problem,EXECUTION_TIMEOUT_MS);
                     const judgement=await judgementService(output,test_case,code,language);
                     const StoreSolutionInDB= await Solution.create({
                         job_id:job.id,
