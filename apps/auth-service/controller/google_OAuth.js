@@ -4,26 +4,27 @@ const {OAuth2Client}=require('google-auth-library');
 const {client}=require('@codekro/redis-config');
 const CodeKroUser=require('../schema/register');
 const jwt=require('jsonwebtoken');
-const googleauthclient= async()=>{
-    try {
-        const client_id=process.env.GOOGLE_CLIENT_ID;
-    const client_secret=process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri=process.env.GOOGLE_REDIRECT_URI;
-    if(!client_id ||!client_secret ||!redirectUri){
-        logger.error("Google credentials not defined");
-        return { message: "Google credentials not defined" };
+const googleauthclient = () => {
+
+    const {
+        GOOGLE_CLIENT_ID,
+        GOOGLE_CLIENT_SECRET,
+        GOOGLE_REDIRECT_URI
+    } = process.env;
+
+    if (!GOOGLE_CLIENT_ID ||
+        !GOOGLE_CLIENT_SECRET ||
+        !GOOGLE_REDIRECT_URI) {
+
+        throw new Error("Google OAuth credentials missing");
     }
-    const Oauthclient=new OAuth2Client({
-        client_id,
-        client_secret,
-        redirectUri
+
+    return new OAuth2Client({
+        clientId: GOOGLE_CLIENT_ID,
+        clientSecret: GOOGLE_CLIENT_SECRET,
+        redirectUri: GOOGLE_REDIRECT_URI
     });
-    return Oauthclient;
-    } catch (error) {
-        logger.error("Failed to create google auth client", error);
-        throw error;
-    }
-}
+};
 const RedirectToGoogleAuth=async(req,res)=>{
  try {
     const OAuthclient=await googleauthclient();
