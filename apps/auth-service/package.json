@@ -11,6 +11,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@codekro/authentication-middleware": "workspace:*",
     "@codekro/db_config": "workspace:*",
     "@codekro/logger": "workspace:*",
     "@codekro/redis-config": "workspace:*",

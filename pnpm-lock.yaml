@@ -221,6 +221,9 @@ importers:
 
   apps/auth-service:
     dependencies:
+      '@codekro/authentication-middleware':
+        specifier: workspace:*
+        version: link:../../packages/authentication-middleware
       '@codekro/db_config':
         specifier: workspace:*
         version: link:../../packages/DB_config

@@ -5,39 +5,16 @@ import { API_CONFIG } from '../../lib/api';
 /**
  * SocialAuthButtons
  * Props:
- *   onGoogleSuccess  {fn(email)} – called after Google OAuth completes, with user email
  *   onGithubSuccess  {fn(email)} – called after GitHub OAuth completes, with user email
  */
-export default function SocialAuthButtons({ onGoogleSuccess, onGithubSuccess }) {
+export default function SocialAuthButtons({ onGithubSuccess }) {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [githubLoading, setGithubLoading] = useState(false);
 
-  /**
-   * In real mode: redirect to backend Google OAuth URL.
-   * In mock mode: simulate a successful Google login returning a mock email.
-   */
-  const handleGoogle = async () => {
+  const handleGoogle = () => {
     if (googleLoading) return;
     setGoogleLoading(true);
-    try {
-      if (!API_CONFIG.USE_MOCK) {
-        // Real flow: redirect browser to backend OAuth endpoint.
-        // The backend will redirect back with token/session.
-        // We store the callback intent so AuthCard can pick up the email after redirect.
-        window.location.href = `${API_CONFIG.AUTH_SERVICE_URL}/auth/google`;
-        return; // page will navigate away
-      }
-
-      // Mock flow: simulate OAuth returning a user email
-      await new Promise((r) => setTimeout(r, 900));
-      const mockEmail = 'googleuser@gmail.com';
-      console.info('[SocialAuth] Mock Google OAuth success → email:', mockEmail);
-      onGoogleSuccess?.(mockEmail);
-    } catch (err) {
-      console.error('[SocialAuth] Google OAuth error:', err);
-    } finally {
-      setGoogleLoading(false);
-    }
+    window.location.assign('http://localhost:8080/auth/google');
   };
 
   const handleGithub = async () => {

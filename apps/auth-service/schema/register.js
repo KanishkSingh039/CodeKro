@@ -17,11 +17,11 @@ const userSchema=new mongoose.Schema({
     username:{
         type:String,
         required:true,
-        unique:true,
-        trim:true,
-        lowercase:true,
-        maxlength:30,
-        match:[/^[a-z0-9_]+$/,"Username may contain only lowercase letters, numbers, and underscores"]
+        // unique:true,
+        // trim:true,
+        // // lowercase:true,
+        // maxlength:30,
+        // match:[/^[a-z0-9_]+$/,"Username may contain only lowercase letters, numbers, and underscores"]
     },
     picture:{
         type:String,

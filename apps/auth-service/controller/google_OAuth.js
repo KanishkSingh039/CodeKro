@@ -25,6 +25,12 @@ const googleauthclient = () => {
         redirectUri: GOOGLE_REDIRECT_URI
     });
 };
+const redirectToFrontend = (res, token) => {
+    const destination = process.env.GOOGLE_SUCCESS_REDIRECT || '/dashboard';
+    res.set('Cache-Control', 'no-store');
+    return res.redirect(`${destination}#token=${encodeURIComponent(token)}`);
+};
+
 const RedirectToGoogleAuth=async(req,res)=>{
  try {
     const OAuthclient=await googleauthclient();
@@ -84,14 +90,7 @@ const GoogleAuthCallback=async(req,res)=>{
                 GoogleAuthtoken:tokens,
             })
             
-            return res.status(200).json({ message: "Google auth tokens",user:{
-                id:Addtheusertodb._id,
-                username:Addtheusertodb.username,
-                name:payload.name,
-                email:payload.email,
-                picture:payload.picture,
-                token:jwtToken
-            } });
+            return redirectToFrontend(res, jwtToken);
         }
         const jwtToken= jwt.sign({
             id:checktheexistinguserwiththisemail._id,
@@ -101,14 +100,7 @@ const GoogleAuthCallback=async(req,res)=>{
             picture:checktheexistinguserwiththisemail.picture,
             googlelogin:true
     },process.env.JWT_SECRET,{expiresIn:"1h"})
-        return res.status(200).json({ message: "Google auth tokens",user:{
-                id:checktheexistinguserwiththisemail._id,
-                name:checktheexistinguserwiththisemail.name,
-                username:checktheexistinguserwiththisemail.username,
-                email:checktheexistinguserwiththisemail.email,
-                picture:checktheexistinguserwiththisemail.picture,
-                token:jwtToken,                googlelogin:true
-            } });
+        return redirectToFrontend(res, jwtToken);
     } catch (error) {
         logger.error("Failed to google auth callback", error);
         return res.status(500).json({ message: error });

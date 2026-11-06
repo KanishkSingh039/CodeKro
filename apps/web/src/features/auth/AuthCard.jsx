@@ -94,7 +94,6 @@ export default function AuthCard({ activeTab, onTabChange, onSuccess }) {
               {/* ── Social OAuth Buttons (Google + GitHub) ── */}
               {/* Both pass the OAuth account email into the OTP step */}
               <SocialAuthButtons
-                onGoogleSuccess={(email) => triggerOtp(email)}
                 onGithubSuccess={(email) => triggerOtp(email)}
               />
 
