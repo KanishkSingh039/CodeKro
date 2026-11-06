@@ -10,7 +10,7 @@ export const API_CONFIG = {
   AUTH_SERVICE_URL:
     import.meta.env?.VITE_AUTH_API_URL ||
     import.meta.env?.VITE_API_BASE_URL ||
-    'http://localhost:3011',
+    '',
   PROBLEM_SERVICE_URL:
     import.meta.env?.VITE_PROBLEM_API_URL ||
     import.meta.env?.VITE_API_BASE_URL ||
@@ -18,7 +18,7 @@ export const API_CONFIG = {
   EXECUTION_SERVICE_URL:
     import.meta.env?.VITE_EXECUTION_API_URL ||
     import.meta.env?.VITE_API_BASE_URL ||
-    'http://localhost:4000',
+    '',
 
   // Toggle mock vs real backend API. Set VITE_USE_MOCK_API='false' to target live backend.
   USE_MOCK: import.meta.env?.VITE_USE_MOCK_API !== 'false',
@@ -30,6 +30,8 @@ export const ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
+    ME: '/auth/me',
+    LOGOUT: '/auth/logout',
     HEALTH: '/auth/health',
   },
   PROBLEM: {
@@ -47,6 +49,7 @@ export const ENDPOINTS = {
 export const TOKEN_STORAGE_KEY = 'codekro_auth_token';
 export const USER_ID_STORAGE_KEY = 'codekro_user_id';
 export const USER_DETAILS_STORAGE_KEY = 'codekro_user';
+export const PROFILE_COOKIE_NAME = 'codekro_profile';
 
 const decodeTokenPayload = (token) => {
   if (!token || typeof token !== 'string') return null;
@@ -91,6 +94,31 @@ const persistAuthUser = (payload) => {
   return user;
 };
 
+const readCookie = (name) => {
+  try {
+    const prefix = `${name}=`;
+    const match = document.cookie
+      .split(';')
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(prefix));
+
+    return match ? decodeURIComponent(match.slice(prefix.length)) : null;
+  } catch {
+    return null;
+  }
+};
+
+const getCookieAuthUser = () => {
+  const rawProfile = readCookie(PROFILE_COOKIE_NAME);
+  if (!rawProfile) return null;
+
+  try {
+    return toAuthUser(JSON.parse(rawProfile));
+  } catch {
+    return null;
+  }
+};
+
 export const getAuthToken = () => {
   try {
     return localStorage.getItem(TOKEN_STORAGE_KEY) || null;
@@ -100,6 +128,16 @@ export const getAuthToken = () => {
 };
 
 export const getAuthUser = () => {
+  const cookieUser = getCookieAuthUser();
+  if (cookieUser) {
+    try {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+    } catch {
+      // Ignore in restricted environments
+    }
+    return persistAuthUser(cookieUser);
+  }
+
   try {
     const stored = localStorage.getItem(USER_DETAILS_STORAGE_KEY);
     if (stored) return JSON.parse(stored);
@@ -119,6 +157,7 @@ export const setAuthToken = (token) => {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
       localStorage.removeItem(USER_ID_STORAGE_KEY);
       localStorage.removeItem(USER_DETAILS_STORAGE_KEY);
+      document.cookie = `${PROFILE_COOKIE_NAME}=; Max-Age=0; Path=/; SameSite=Lax`;
     }
   } catch {
     // Ignore in restricted environments
@@ -160,7 +199,7 @@ export async function request(url, options = {}) {
     }
   }
 
-  const token = getAuthToken();
+  const token = getCookieAuthUser() ? null : getAuthToken();
   const requestHeaders = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -208,6 +247,60 @@ export async function request(url, options = {}) {
     throw new ApiError(err.message || 'Network request failed', 0, err);
   }
 }
+
+let authSessionPromise = null;
+
+export const hydrateAuthSession = () => {
+  const cookieUser = getCookieAuthUser();
+  if (cookieUser) return Promise.resolve(persistAuthUser(cookieUser));
+
+  if (authSessionPromise) return authSessionPromise;
+
+  const sessionPromise = (async () => {
+    try {
+      const res = await request(`${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.ME}`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      return persistAuthUser(res?.user || res);
+    } catch (error) {
+      if (error?.status === 401) {
+        clearAuthToken();
+        try {
+          localStorage.removeItem('codekro_auth');
+        } catch {
+          // Ignore in restricted environments
+        }
+      }
+      return null;
+    }
+  })();
+
+  authSessionPromise = sessionPromise;
+  sessionPromise.finally(() => {
+    if (authSessionPromise === sessionPromise) authSessionPromise = null;
+  });
+
+  return sessionPromise;
+};
+
+export const logout = async () => {
+  clearAuthToken();
+  try {
+    localStorage.removeItem('codekro_auth');
+  } catch {
+    // Ignore in restricted environments
+  }
+
+  try {
+    await request(`${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.LOGOUT}`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch {
+    // The local session is already cleared
+  }
+};
 
 
 // In-memory problem store with localStorage persistence for bookmarking/mutations
@@ -769,11 +862,10 @@ export const apiClient = {
   getAuthToken,
   setAuthToken,
   clearAuthToken,
+  hydrateSession: hydrateAuthSession,
+  logout,
   getCurrentUserId() {
     try {
-      const storedId = localStorage.getItem(USER_ID_STORAGE_KEY);
-      if (storedId) return storedId;
-
       return getAuthUser()?.id || '';
     } catch {
       return '';
@@ -788,14 +880,13 @@ export const apiClient = {
     if (!API_CONFIG.USE_MOCK) {
       const data = await request(`${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.LOGIN}`, {
         method: 'POST',
+        credentials: 'include',
         body: {
           email: credentials?.email,
           password: credentials?.password,
         },
       });
-      if (data?.token) {
-        setAuthToken(data.token);
-      }
+      await hydrateAuthSession();
       return data;
     }
     console.info('[apiClient] login:', { email: credentials?.email });
@@ -810,6 +901,7 @@ export const apiClient = {
     if (!API_CONFIG.USE_MOCK) {
       const res = await request(`${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.REGISTER}`, {
         method: 'POST',
+        credentials: 'include',
         body: {
           name: data?.name,
           username: data?.username,
@@ -828,7 +920,9 @@ export const apiClient = {
    * Fetches current authenticated user profile
    */
   async getMe() {
-    const authUser = getAuthUser();
+    const sessionUser = API_CONFIG.USE_MOCK ? null : await hydrateAuthSession();
+    const authUser = sessionUser || getAuthUser();
+
     if (authUser?.id) {
       return {
         id: authUser.id,
@@ -872,6 +966,10 @@ export const apiClient = {
     } = params;
 
     let sourceProblems = null;
+
+    if (!API_CONFIG.USE_MOCK && !getAuthUser()?.id) {
+      await hydrateAuthSession();
+    }
 
     if (!API_CONFIG.USE_MOCK) {
       try {

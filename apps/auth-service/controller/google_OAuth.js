@@ -2,6 +2,7 @@ require('dotenv').config();
 const logger=require('@codekro/logger');
 const {OAuth2Client}=require('google-auth-library');
 const {client}=require('@codekro/redis-config');
+const {setAuthCookie}=require('@codekro/authentication-middleware');
 const CodeKroUser=require('../schema/register');
 const jwt=require('jsonwebtoken');
 const googleauthclient = () => {
@@ -27,8 +28,9 @@ const googleauthclient = () => {
 };
 const redirectToFrontend = (res, token) => {
     const destination = process.env.GOOGLE_SUCCESS_REDIRECT || '/dashboard';
+    setAuthCookie(res, token);
     res.set('Cache-Control', 'no-store');
-    return res.redirect(`${destination}#token=${encodeURIComponent(token)}`);
+    return res.redirect(destination);
 };
 
 const RedirectToGoogleAuth=async(req,res)=>{
@@ -82,6 +84,7 @@ const GoogleAuthCallback=async(req,res)=>{
                 id:Addtheusertodb._id,
                 email:payload.email,
                 username:payload.name,
+                name:payload.name,
                 picture:payload.picture,
             },process.env.JWT_SECRET,{expiresIn:"1h"})
             client.set(tokeninfo.email,

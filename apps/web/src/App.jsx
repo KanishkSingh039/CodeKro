@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { apiClient } from './lib/api';
 import AppLayout from './layouts/AppLayout';
 import AuthLayout from './layouts/AuthLayout';
 import AuthCard from './features/auth/AuthCard';
@@ -142,6 +143,26 @@ export default function App() {
     setSettingsTab(loc.settingsTab || 'profile');
   };
 
+  useEffect(() => {
+    if (apiClient.config.USE_MOCK) return undefined;
+
+    let active = true;
+
+    apiClient.hydrateSession().then((user) => {
+      if (!active || !user) return;
+
+      localStorage.setItem('codekro_auth', 'true');
+      if (window.location.pathname === '/' || window.location.pathname === '') {
+        window.history.replaceState(null, '', '/dashboard');
+        setCurrentRoute('dashboard');
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* 1. Public Landing Page Route: / (signed-out visitors) */}
@@ -175,7 +196,8 @@ export default function App() {
           currentRoute="profile"
           onRouteChange={(dest) => {
             if (dest === 'auth') {
-              localStorage.removeItem('codekro_auth');
+              void apiClient.logout();
+              queryClient.clear();
               navigateTo('/');
             } else if (dest === 'settings') {
               navigateTo('/settings/profile');
@@ -203,7 +225,8 @@ export default function App() {
           currentRoute="settings"
           onRouteChange={(dest) => {
             if (dest === 'auth') {
-              localStorage.removeItem('codekro_auth');
+              void apiClient.logout();
+              queryClient.clear();
               navigateTo('/');
             } else if (dest === 'profile') {
               navigateTo('/u/kanishk');
@@ -220,7 +243,8 @@ export default function App() {
             initialTab={settingsTab}
             onBackToProfile={() => navigateTo('/u/kanishk')}
             onAccountDeleted={() => {
-              localStorage.removeItem('codekro_auth');
+              void apiClient.logout();
+              queryClient.clear();
               navigateTo('/');
             }}
           />
@@ -233,7 +257,8 @@ export default function App() {
           currentRoute="dashboard"
           onRouteChange={(dest) => {
             if (dest === 'auth') {
-              localStorage.removeItem('codekro_auth');
+              void apiClient.logout();
+              queryClient.clear();
               navigateTo('/');
             } else if (dest === 'profile') {
               navigateTo('/u/kanishk');
@@ -265,6 +290,7 @@ export default function App() {
               window.history.replaceState(null, '', tab === 'register' ? '/register' : '/login');
             }}
             onSuccess={() => {
+              queryClient.clear();
               localStorage.setItem('codekro_auth', 'true');
               navigateTo('/dashboard');
             }}

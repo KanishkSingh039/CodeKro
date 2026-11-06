@@ -14,7 +14,7 @@ export default function SocialAuthButtons({ onGithubSuccess }) {
   const handleGoogle = () => {
     if (googleLoading) return;
     setGoogleLoading(true);
-    window.location.assign('http://localhost:8080/auth/google');
+    window.location.assign(`${API_CONFIG.AUTH_SERVICE_URL}/auth/google`);
   };
 
   const handleGithub = async () => {

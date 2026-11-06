@@ -1,8 +1,12 @@
 const express=require("express");
 const router=express.Router();
+const {authenticate}=require("@codekro/authentication-middleware");
 const {login}=require("../controller/login");
+const {getMe,logout}=require("../controller/session");
 const {RedirectToGoogleAuth,GoogleAuthCallback}=require("../controller/google_OAuth");
 router.post("/login",login);
+router.get("/me",authenticate,getMe);
+router.post("/logout",logout);
 router.get("/google",RedirectToGoogleAuth);
 router.get("/google/callback",GoogleAuthCallback);
 module.exports=router;

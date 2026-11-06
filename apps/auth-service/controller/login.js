@@ -3,6 +3,7 @@ const CodeKroUser=require('../schema/register')
 const logger=require('@codekro/logger');
 const jwt=require('jsonwebtoken');  
 const {client}=require('@codekro/redis-config');
+const {setAuthCookie}=require('@codekro/authentication-middleware');
 
 // DUMMY_HASH is used to run a constant-time bcrypt.compare even when the
 // email doesn't exist, preventing user-enumeration via timing side-channel.
@@ -31,7 +32,8 @@ const login=async(req,res)=>{
         id:checkemail._id,
         email:checkemail.email,
         username:checkemail.username,
-        name:checkemail.username,
+        name:checkemail.name,
+        picture:checkemail.picture || "",
         googlelogin:false,
         
     },process.env.JWT_SECRET,{expiresIn:"1h"});
@@ -40,6 +42,7 @@ const login=async(req,res)=>{
         email:checkemail.email,
         token
     }));
+    setAuthCookie(res,token);
     return res.status(200).json({message:"Login successfully",user:checkemail.username,email:checkemail.email,token});   
 }
 module.exports={login};
