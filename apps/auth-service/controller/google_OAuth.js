@@ -87,11 +87,10 @@ const GoogleAuthCallback=async(req,res)=>{
                 name:payload.name,
                 picture:payload.picture,
             },process.env.JWT_SECRET,{expiresIn:"1h"})
-            client.set(tokeninfo.email,
-            {
-                JWTtoken:JSON.stringify(jwtToken),
+            await client.set(tokeninfo.email,JSON.stringify({
+                JWTtoken:jwtToken,
                 GoogleAuthtoken:tokens,
-            })
+            }));
             
             return redirectToFrontend(res, jwtToken);
         }
