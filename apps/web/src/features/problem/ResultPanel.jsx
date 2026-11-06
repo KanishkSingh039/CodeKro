@@ -79,39 +79,43 @@ export default function ResultPanel({
           </div>
 
           {/* Accepted Metric Cards (Runtime & Memory percentiles) */}
-          {runResult.status === 'Accepted' && (
+          {runResult.status === 'Accepted' && (runResult.runtime || runResult.memory) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div className="p-3 rounded-[var(--radius-sm)] border border-border-default bg-bg-surface space-y-1">
-                <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">
-                  {COPY.problem.console.runtimeLabel}
-                </span>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-mono text-base font-bold text-text-primary">
-                    {runResult.runtime || '4 ms'}
+              {runResult.runtime && (
+                <div className="p-3 rounded-[var(--radius-sm)] border border-border-default bg-bg-surface space-y-1">
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">
+                    {COPY.problem.console.runtimeLabel}
                   </span>
-                  {runResult.runtimePercentile && (
-                    <span className="text-xs text-text-secondary font-mono">
-                      Beats {runResult.runtimePercentile}% of submissions
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-mono text-base font-bold text-text-primary">
+                      {runResult.runtime}
                     </span>
-                  )}
+                    {runResult.runtimePercentile && (
+                      <span className="text-xs text-text-secondary font-mono">
+                        Beats {runResult.runtimePercentile}% of submissions
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="p-3 rounded-[var(--radius-sm)] border border-border-default bg-bg-surface space-y-1">
-                <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">
-                  {COPY.problem.console.memoryLabel}
-                </span>
-                <div className="flex items-baseline gap-2">
-                  <span className="font-mono text-base font-bold text-text-primary">
-                    {runResult.memory || '10.4 MB'}
+              {runResult.memory && (
+                <div className="p-3 rounded-[var(--radius-sm)] border border-border-default bg-bg-surface space-y-1">
+                  <span className="text-[11px] font-semibold text-text-muted uppercase tracking-wider block">
+                    {COPY.problem.console.memoryLabel}
                   </span>
-                  {runResult.memoryPercentile && (
-                    <span className="text-xs text-text-secondary font-mono">
-                      Beats {runResult.memoryPercentile}% of submissions
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-mono text-base font-bold text-text-primary">
+                      {runResult.memory}
                     </span>
-                  )}
+                    {runResult.memoryPercentile && (
+                      <span className="text-xs text-text-secondary font-mono">
+                        Beats {runResult.memoryPercentile}% of submissions
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 

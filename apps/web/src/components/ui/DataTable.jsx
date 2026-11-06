@@ -184,6 +184,9 @@ export default function DataTable({
           <tbody className="divide-y divide-border-subtle">
             {problems.map((problem, index) => {
               const isEven = index % 2 === 0;
+              const frequency = Number.isFinite(problem.frequency)
+                ? Math.min(100, Math.max(0, problem.frequency))
+                : 0;
               return (
                 <tr
                   key={problem.id}
@@ -220,7 +223,9 @@ export default function DataTable({
 
                   {/* Acceptance Rate */}
                   <td className="py-2.5 px-3 font-mono text-text-secondary align-middle">
-                    {problem.acceptanceRate.toFixed(1)}%
+                    {Number.isFinite(problem.acceptanceRate)
+                      ? `${problem.acceptanceRate.toFixed(1)}%`
+                      : '—'}
                   </td>
 
                   {/* Difficulty */}
@@ -233,7 +238,7 @@ export default function DataTable({
                     <div className="w-20 bg-bg-surface-subtle h-1.5 rounded-full overflow-hidden border border-border-subtle">
                       <div
                         className="bg-text-muted/60 h-full rounded-full transition-all"
-                        style={{ width: `${problem.frequency || 50}%` }}
+                        style={{ width: `${frequency}%` }}
                       />
                     </div>
                   </td>
@@ -246,20 +251,24 @@ export default function DataTable({
                       if (onBookmarkToggle) onBookmarkToggle(problem.id);
                     }}
                   >
-                    <button
-                      type="button"
-                      aria-label={problem.isBookmarked ? 'Remove bookmark' : 'Bookmark problem'}
-                      className="p-1 text-text-muted hover:text-accent transition-colors cursor-pointer"
-                    >
-                      <Star
-                        size={14}
-                        className={
-                          problem.isBookmarked
-                            ? 'text-accent fill-accent'
-                            : 'text-text-muted/50 hover:text-text-primary'
-                        }
-                      />
-                    </button>
+                    {onBookmarkToggle ? (
+                      <button
+                        type="button"
+                        aria-label={problem.isBookmarked ? 'Remove bookmark' : 'Bookmark problem'}
+                        className="p-1 text-text-muted hover:text-accent transition-colors cursor-pointer"
+                      >
+                        <Star
+                          size={14}
+                          className={
+                            problem.isBookmarked
+                              ? 'text-accent fill-accent'
+                              : 'text-text-muted/50 hover:text-text-primary'
+                          }
+                        />
+                      </button>
+                    ) : (
+                      <span className="text-text-muted">—</span>
+                    )}
                   </td>
                 </tr>
               );

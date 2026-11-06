@@ -271,28 +271,6 @@ export default function ProblemWorkspace({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Vote mutation (Like / Dislike)
-  const voteMutation = useMutation({
-    mutationFn: (type) => apiClient.voteProblem(problem.id, type),
-    onSuccess: (updatedVotes) => {
-      queryClient.setQueryData(['problem', slug], (old) => ({
-        ...old,
-        ...updatedVotes,
-      }));
-    },
-  });
-
-  // Bookmark mutation
-  const bookmarkMutation = useMutation({
-    mutationFn: (id) => apiClient.toggleBookmark(id),
-    onSuccess: ({ isBookmarked }) => {
-      queryClient.setQueryData(['problem', slug], (old) => ({
-        ...old,
-        isBookmarked,
-      }));
-    },
-  });
-
   // Loading State
   if (isLoading) {
     return (
@@ -353,11 +331,7 @@ export default function ProblemWorkspace({
         onLeftTabChange={setLeftTab}
         submissionsCount={submissions.length}
         descriptionContent={
-          <ProblemDescription
-            problem={problem}
-            onVote={(type) => voteMutation.mutate(type)}
-            onBookmarkToggle={(id) => bookmarkMutation.mutate(id)}
-          />
+          <ProblemDescription problem={problem} />
         }
         editorialContent={
           <EditorialTab
@@ -480,7 +454,9 @@ export default function ProblemWorkspace({
               Solution Accepted!
             </span>
             <span className="text-[11px] text-text-muted font-mono block">
-              Runtime: {runResult?.runtime || '4 ms'} • Memory: {runResult?.memory || '10.4 MB'}
+              {runResult?.runtime || runResult?.memory
+                ? [runResult.runtime, runResult.memory].filter(Boolean).join(' • ')
+                : 'All reported test cases passed.'}
             </span>
           </div>
         </div>

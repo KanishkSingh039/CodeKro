@@ -112,6 +112,7 @@ export const resetFrontendData = async () => {
   try {
     await request(`${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.LOGOUT}`, {
       method: 'POST',
+      timeout: 2000,
     });
   } catch {
     // The local reset still proceeds when the service is unavailable.
@@ -211,8 +212,6 @@ let authSessionPromise = null;
 
 export const hydrateAuthSession = () => {
   const cookieUser = getCookieAuthUser();
-  if (cookieUser) return Promise.resolve(cookieUser);
-
   if (authSessionPromise) return authSessionPromise;
 
   const sessionPromise = (async () => {
@@ -222,10 +221,11 @@ export const hydrateAuthSession = () => {
       });
       return toAuthUser(res?.user || res);
     } catch (error) {
-      if (error?.status === 401) {
+      if (error?.status === 401 || error?.status === 404) {
         clearProfileCookie();
+        return null;
       }
-      return null;
+      return cookieUser;
     }
   })();
 
@@ -287,9 +287,9 @@ const normalizeProblem = (problem, index) => {
     title,
     titleSlug: problem?.titleSlug || slugifyTitle(title),
     difficulty: difficulty.charAt(0).toUpperCase() + difficulty.slice(1),
-    acceptanceRate: Number.isFinite(acceptanceRate) ? acceptanceRate : 0,
+    acceptanceRate: Number.isFinite(acceptanceRate) ? acceptanceRate : null,
     status: problem?.status || 'todo',
-    frequency: Number.isFinite(frequency) ? frequency : 0,
+    frequency: Number.isFinite(frequency) ? frequency : null,
     topicTags: Array.isArray(problem?.topicTags) ? problem.topicTags : [],
     companies: Array.isArray(problem?.companies) ? problem.companies : [],
     testCases,
@@ -675,19 +675,26 @@ export const apiClient = {
   },
 
   async getUserProfile(username) {
-    const authUser = getAuthUser() || (await hydrateAuthSession());
+    const authUser = await hydrateAuthSession();
     if (!authUser?.id) {
       throw new ApiError('Sign in required to load a profile.', 401);
     }
 
     const currentUsername = authUser.username || authUser.email?.split('@')[0] || '';
-    const normalized = String(username || '').toLowerCase();
+    let normalized = String(username || '').trim().toLowerCase();
+    try {
+      normalized = decodeURIComponent(normalized);
+    } catch {
+      // Use the original identifier when the route contains malformed encoding.
+    }
 
-    if (
-      normalized &&
-      normalized !== currentUsername.toLowerCase() &&
-      normalized !== String(authUser.id).toLowerCase()
-    ) {
+    const currentIdentifiers = new Set(
+      [authUser.id, authUser.username, authUser.name, authUser.email]
+        .filter(Boolean)
+        .map((value) => String(value).trim().toLowerCase())
+    );
+
+    if (normalized && !currentIdentifiers.has(normalized)) {
       throw new ApiError(`User "${username}" not found`, 404);
     }
 

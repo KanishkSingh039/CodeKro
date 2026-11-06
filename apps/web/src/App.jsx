@@ -20,6 +20,14 @@ const queryClient = new QueryClient({
   },
 });
 
+const decodePathSegment = (value) => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
 export default function App() {
   const getInitialTheme = () => {
     const params = new URLSearchParams(window.location.search);
@@ -42,7 +50,8 @@ export default function App() {
     const username = authUser?.username || '';
 
     if (pathname.startsWith('/u/')) {
-      const routeUsername = pathname.replace('/u/', '').replace(/\/$/, '') || username;
+      const encodedUsername = pathname.replace('/u/', '').replace(/\/$/, '');
+      const routeUsername = decodePathSegment(encodedUsername) || username;
       return { route: 'profile', username: routeUsername, slug: '', tab: 'login', settingsTab: 'profile' };
     }
 
@@ -129,7 +138,22 @@ export default function App() {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
 
-  const navigateTo = (path) => {
+  const navigateTo = (requestedPath) => {
+    const requestedRoute = requestedPath.split(/[?#]/)[0];
+    const isProtectedRoute =
+      requestedRoute === '/dashboard' ||
+      requestedRoute === '/problems' ||
+      requestedRoute.startsWith('/problems/') ||
+      requestedRoute.startsWith('/settings') ||
+      requestedRoute.startsWith('/u/');
+    const hasSession = Boolean(sessionUser?.id || getAuthUser()?.id);
+    let path = requestedPath;
+
+    if (!hasSession && isProtectedRoute) path = '/login';
+    if (hasSession && (requestedRoute === '/login' || requestedRoute === '/register')) {
+      path = '/dashboard';
+    }
+
     window.history.pushState(null, '', path);
     const loc = parseCurrentLocation();
     setCurrentRoute(loc.route);
@@ -249,6 +273,7 @@ export default function App() {
           onToggleTheme={toggleTheme}
         >
           <SettingsView
+            user={sessionUser}
             initialTab={settingsTab}
             onBackToProfile={() => navigateTo(profilePath())}
             onAccountDeleted={() => {

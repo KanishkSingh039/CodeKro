@@ -4,7 +4,6 @@ import {
   ThumbsDown,
   Star,
   Share2,
-  Flag,
   Tag,
   Building2,
   ChevronDown,
@@ -161,7 +160,7 @@ export default function ProblemDescription({
 
       {/* Footer Action Row: Votes, Bookmark, Share, Report */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border-default text-xs text-text-muted">
-        <div className="flex items-center gap-2">
+        {onVote && <div className="flex items-center gap-2">
           {/* Like */}
           <button
             type="button"
@@ -191,22 +190,24 @@ export default function ProblemDescription({
             <ThumbsDown className="w-3.5 h-3.5" />
             <span className="font-mono">{problem.dislikes || 0}</span>
           </button>
-        </div>
+        </div>}
 
         <div className="flex items-center gap-2">
           {/* Bookmark */}
-          <button
-            type="button"
-            onClick={() => onBookmarkToggle && onBookmarkToggle(problem.id)}
-            className={`p-1.5 rounded-[var(--radius-sm)] border border-border-default transition-colors cursor-pointer ${
-              problem.isBookmarked
-                ? 'text-accent border-accent/40 bg-bg-surface-subtle'
-                : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover bg-bg-surface'
-            }`}
-            title={problem.isBookmarked ? COPY.problem.actions.bookmarked : COPY.problem.actions.bookmark}
-          >
-            <Star className={`w-3.5 h-3.5 ${problem.isBookmarked ? 'fill-accent' : ''}`} />
-          </button>
+          {onBookmarkToggle && (
+            <button
+              type="button"
+              onClick={() => onBookmarkToggle(problem.id)}
+              className={`p-1.5 rounded-[var(--radius-sm)] border border-border-default transition-colors cursor-pointer ${
+                problem.isBookmarked
+                  ? 'text-accent border-accent/40 bg-bg-surface-subtle'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover bg-bg-surface'
+              }`}
+              title={problem.isBookmarked ? COPY.problem.actions.bookmarked : COPY.problem.actions.bookmark}
+            >
+              <Star className={`w-3.5 h-3.5 ${problem.isBookmarked ? 'fill-accent' : ''}`} />
+            </button>
+          )}
 
           {/* Share */}
           <button
@@ -217,15 +218,6 @@ export default function ProblemDescription({
           >
             {shareCopied ? <Check className="w-3.5 h-3.5 text-accent" /> : <Share2 className="w-3.5 h-3.5" />}
             <span>{shareCopied ? 'Copied' : COPY.problem.actions.share}</span>
-          </button>
-
-          {/* Report */}
-          <button
-            type="button"
-            className="p-1.5 rounded-[var(--radius-sm)] border border-border-default bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover transition-colors cursor-pointer"
-            title={COPY.problem.actions.report}
-          >
-            <Flag className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>

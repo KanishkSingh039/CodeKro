@@ -122,7 +122,9 @@ export function ProblemPreviewTable({
                         </div>
                       </td>
                       <td className="py-3.5 px-4 font-mono text-muted text-right">
-                        {prob.acceptanceRate}%
+                        {Number.isFinite(prob.acceptanceRate)
+                          ? `${prob.acceptanceRate}%`
+                          : '—'}
                       </td>
                     </tr>
                   ))}

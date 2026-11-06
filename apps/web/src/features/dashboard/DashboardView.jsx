@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api';
 import GreetingRow from './GreetingRow';
 import TopicChips from './TopicChips';
@@ -35,7 +35,6 @@ const getFiltersFromURL = () => {
  * 8/4 split on desktop, responsive single-column on mobile.
  */
 export default function DashboardView({ onNavigateProblem }) {
-  const queryClient = useQueryClient();
   const [filters, setFilters] = useState(getFiltersFromURL);
   const [randomNotice, setRandomNotice] = useState(null);
 
@@ -153,18 +152,6 @@ export default function DashboardView({ onNavigateProblem }) {
     queryFn: () => apiClient.getRecentSubmissions(5),
   });
 
-  // Bookmark mutation with optimistic update
-  const bookmarkMutation = useMutation({
-    mutationFn: (problemId) => apiClient.toggleBookmark(problemId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['problems'] });
-    },
-  });
-
-  const handleBookmarkToggle = (problemId) => {
-    bookmarkMutation.mutate(problemId);
-  };
-
   const handleLoadMore = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) fetchNextPage();
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
@@ -237,7 +224,6 @@ export default function DashboardView({ onNavigateProblem }) {
             isError={isProblemsError}
             errorMessage={problemsError?.message}
             onRetry={refetchProblems}
-            onBookmarkToggle={handleBookmarkToggle}
             onProblemClick={(p) => {
               if (onNavigateProblem) onNavigateProblem(p);
             }}

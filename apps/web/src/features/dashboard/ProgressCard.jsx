@@ -28,7 +28,8 @@ export default function ProgressCard({ stats, isLoading = false }) {
   // SVG circular calculations
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (circumference * totalSolved) / totalProblems;
+  const strokeDashoffset =
+    circumference - (circumference * totalSolved) / (totalProblems || 1);
 
   return (
     <Card padding="sm" className="space-y-4">

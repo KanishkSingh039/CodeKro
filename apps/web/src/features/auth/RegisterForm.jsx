@@ -56,11 +56,15 @@ export default function RegisterForm({ onSwitchToLogin, onSuccess }) {
         email: formData.email,
         password: formData.password,
       });
-      await apiClient.login({
-        email: formData.email,
-        password: formData.password,
-      });
-      onSuccess?.();
+      try {
+        await apiClient.login({
+          email: formData.email,
+          password: formData.password,
+        });
+        onSuccess?.();
+      } catch {
+        setServerError('Account created. Please switch to Sign in and use your new credentials.');
+      }
     } catch (err) {
       setServerError(err?.message || 'Unable to create your account. Please try again.');
     } finally {

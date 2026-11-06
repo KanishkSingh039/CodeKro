@@ -3,10 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SettingsLayout from './SettingsLayout';
 import ProfileForm from './ProfileForm';
 import AccountForm from './AccountForm';
-import PreferencesForm from './PreferencesForm';
-import PrivacyForm from './PrivacyForm';
-import NotificationsForm from './NotificationsForm';
-import { apiClient, getAuthUser } from '../../lib/api';
+import { apiClient } from '../../lib/api';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 /**
@@ -14,6 +11,7 @@ import { CheckCircle2, AlertCircle } from 'lucide-react';
  * Top-level view for /settings/profile, managing queries, mutations, dirty state, and alerts.
  */
 export default function SettingsView({
+  user,
   initialTab = 'profile',
   onBackToProfile,
   onAccountDeleted,
@@ -24,28 +22,13 @@ export default function SettingsView({
   const [errorMessage, setErrorMessage] = useState('');
 
   const queryClient = useQueryClient();
-  const currentUsername = getAuthUser()?.username || '';
+  const profileIdentifier = user?.email || user?.username || '';
 
   // Queries for all settings datasets
   const profileQuery = useQuery({
-    queryKey: ['profile', currentUsername],
-    queryFn: () => apiClient.getUserProfile(currentUsername),
-    enabled: Boolean(currentUsername),
-  });
-
-  const preferencesQuery = useQuery({
-    queryKey: ['settings-preferences'],
-    queryFn: () => apiClient.getPreferences(),
-  });
-
-  const privacyQuery = useQuery({
-    queryKey: ['settings-privacy'],
-    queryFn: () => apiClient.getPrivacy(),
-  });
-
-  const notificationsQuery = useQuery({
-    queryKey: ['settings-notifications'],
-    queryFn: () => apiClient.getNotifications(),
+    queryKey: ['profile', profileIdentifier],
+    queryFn: () => apiClient.getUserProfile(profileIdentifier),
+    enabled: Boolean(profileIdentifier),
   });
 
   // Warn on browser unload if form is dirty
@@ -75,42 +58,6 @@ export default function SettingsView({
     },
     onError: (err) => {
       setErrorMessage(err.message || 'Failed to update profile.');
-    },
-  });
-
-  const updatePreferencesMutation = useMutation({
-    mutationFn: (data) => apiClient.updatePreferences(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings-preferences'] });
-      setIsFormDirty(false);
-      showToast('Preferences updated successfully.');
-    },
-    onError: (err) => {
-      setErrorMessage(err.message || 'Failed to update preferences.');
-    },
-  });
-
-  const updatePrivacyMutation = useMutation({
-    mutationFn: (data) => apiClient.updatePrivacy(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings-privacy'] });
-      setIsFormDirty(false);
-      showToast('Privacy settings updated successfully.');
-    },
-    onError: (err) => {
-      setErrorMessage(err.message || 'Failed to update privacy settings.');
-    },
-  });
-
-  const updateNotificationsMutation = useMutation({
-    mutationFn: (data) => apiClient.updateNotifications(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['settings-notifications'] });
-      setIsFormDirty(false);
-      showToast('Notification settings updated successfully.');
-    },
-    onError: (err) => {
-      setErrorMessage(err.message || 'Failed to update notifications.');
     },
   });
 
@@ -186,37 +133,16 @@ export default function SettingsView({
         />
       )}
 
-      {/* Preferences Tab */}
-      {activeTab === 'preferences' && (
-        <PreferencesForm
-          key={preferencesQuery.isSuccess ? 'preferences-loaded' : 'preferences-loading'}
-          initialPreferences={preferencesQuery.data}
-          isSaving={updatePreferencesMutation.isPending}
-          onSave={(data) => updatePreferencesMutation.mutate(data)}
-          onDirtyChange={setIsFormDirty}
-        />
-      )}
-
-      {/* Privacy Tab */}
-      {activeTab === 'privacy' && (
-        <PrivacyForm
-          key={privacyQuery.isSuccess ? 'privacy-loaded' : 'privacy-loading'}
-          initialPrivacy={privacyQuery.data}
-          isSaving={updatePrivacyMutation.isPending}
-          onSave={(data) => updatePrivacyMutation.mutate(data)}
-          onDirtyChange={setIsFormDirty}
-        />
-      )}
-
-      {/* Notifications Tab */}
-      {activeTab === 'notifications' && (
-        <NotificationsForm
-          key={notificationsQuery.isSuccess ? 'notifications-loaded' : 'notifications-loading'}
-          initialNotifications={notificationsQuery.data}
-          isSaving={updateNotificationsMutation.isPending}
-          onSave={(data) => updateNotificationsMutation.mutate(data)}
-          onDirtyChange={setIsFormDirty}
-        />
+      {['preferences', 'privacy', 'notifications'].includes(activeTab) && (
+        <div className="rounded-[var(--radius-md)] border border-border-default bg-bg-surface px-6 py-12 text-center space-y-2">
+          <AlertCircle className="w-5 h-5 mx-auto text-text-muted" />
+          <h3 className="text-sm font-semibold text-text-primary">
+            {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} settings unavailable
+          </h3>
+          <p className="text-xs text-text-muted">
+            These settings will appear after backend persistence is available.
+          </p>
+        </div>
       )}
     </SettingsLayout>
   );
