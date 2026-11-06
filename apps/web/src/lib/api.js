@@ -14,7 +14,7 @@ export const API_CONFIG = {
   PROBLEM_SERVICE_URL:
     import.meta.env?.VITE_PROBLEM_API_URL ||
     import.meta.env?.VITE_API_BASE_URL ||
-    'http://localhost:5000',
+    '',
   EXECUTION_SERVICE_URL:
     import.meta.env?.VITE_EXECUTION_API_URL ||
     import.meta.env?.VITE_API_BASE_URL ||
@@ -45,6 +45,51 @@ export const ENDPOINTS = {
 
 // Auth Token Management
 export const TOKEN_STORAGE_KEY = 'codekro_auth_token';
+export const USER_ID_STORAGE_KEY = 'codekro_user_id';
+export const USER_DETAILS_STORAGE_KEY = 'codekro_user';
+
+const decodeTokenPayload = (token) => {
+  if (!token || typeof token !== 'string') return null;
+
+  const encodedPayload = token.split('.')[1];
+  if (!encodedPayload) return null;
+
+  try {
+    const base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return null;
+  }
+};
+
+const toAuthUser = (payload) => {
+  if (!payload || !payload.id) return null;
+
+  return {
+    id: String(payload.id),
+    name: payload.name || payload.username || '',
+    username: payload.username || '',
+    email: payload.email || '',
+    picture: payload.picture || '',
+  };
+};
+
+const persistAuthUser = (payload) => {
+  const user = toAuthUser(payload);
+  if (!user) return null;
+
+  try {
+    localStorage.setItem(USER_ID_STORAGE_KEY, user.id);
+    localStorage.setItem(USER_DETAILS_STORAGE_KEY, JSON.stringify(user));
+  } catch {
+    // Ignore in restricted environments
+  }
+
+  return user;
+};
 
 export const getAuthToken = () => {
   try {
@@ -54,12 +99,26 @@ export const getAuthToken = () => {
   }
 };
 
+export const getAuthUser = () => {
+  try {
+    const stored = localStorage.getItem(USER_DETAILS_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {
+    // Fall through to decoding the token
+  }
+
+  return persistAuthUser(decodeTokenPayload(getAuthToken()));
+};
+
 export const setAuthToken = (token) => {
   try {
     if (token) {
       localStorage.setItem(TOKEN_STORAGE_KEY, token);
+      persistAuthUser(decodeTokenPayload(token));
     } else {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
+      localStorage.removeItem(USER_ID_STORAGE_KEY);
+      localStorage.removeItem(USER_DETAILS_STORAGE_KEY);
     }
   } catch {
     // Ignore in restricted environments
@@ -673,6 +732,36 @@ const generateHeatmap = () => {
 
 const activityHeatmap = generateHeatmap();
 
+const slugifyTitle = (title) =>
+  String(title || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const normalizeProblem = (problem, index) => {
+  const title = problem?.title || 'Untitled Problem';
+  const id = problem?.id ?? problem?._id ?? `problem-${index + 1}`;
+  const difficulty = String(problem?.difficulty || 'medium').toLowerCase();
+  const acceptanceRate = Number(problem?.acceptanceRate);
+  const frequency = Number(problem?.frequency);
+
+  return {
+    ...problem,
+    id,
+    frontendQuestionId: problem?.frontendQuestionId ?? problem?.questionId ?? index + 1,
+    title,
+    titleSlug: problem?.titleSlug || slugifyTitle(title),
+    difficulty: difficulty.charAt(0).toUpperCase() + difficulty.slice(1),
+    acceptanceRate: Number.isFinite(acceptanceRate) ? acceptanceRate : 0,
+    status: problem?.status || 'todo',
+    frequency: Number.isFinite(frequency) ? frequency : 0,
+    topicTags: Array.isArray(problem?.topicTags) ? problem.topicTags : [],
+    companies: Array.isArray(problem?.companies) ? problem.companies : [],
+    isBookmarked: userBookmarks.has(id),
+  };
+};
+
 export const apiClient = {
   // Config & Client Utilities
   config: API_CONFIG,
@@ -682,9 +771,12 @@ export const apiClient = {
   clearAuthToken,
   getCurrentUserId() {
     try {
-      return localStorage.getItem('codekro_user_id') || 'usr_kanishk01';
+      const storedId = localStorage.getItem(USER_ID_STORAGE_KEY);
+      if (storedId) return storedId;
+
+      return getAuthUser()?.id || '';
     } catch {
-      return 'usr_kanishk01';
+      return '';
     }
   },
 
@@ -736,6 +828,18 @@ export const apiClient = {
    * Fetches current authenticated user profile
    */
   async getMe() {
+    const authUser = getAuthUser();
+    if (authUser?.id) {
+      return {
+        id: authUser.id,
+        username: authUser.username || authUser.email?.split('@')[0] || 'developer',
+        name: authUser.name || authUser.username || 'Developer',
+        email: authUser.email || '',
+        avatarUrl: authUser.picture || '',
+        lastAttemptedProblem: null,
+      };
+    }
+
     await new Promise((r) => setTimeout(r, 60));
     return {
       id: 'usr_kanishk01',
@@ -767,6 +871,8 @@ export const apiClient = {
       sort = 'id_asc',
     } = params;
 
+    let sourceProblems = null;
+
     if (!API_CONFIG.USE_MOCK) {
       try {
         const res = await request(`${API_CONFIG.PROBLEM_SERVICE_URL}${ENDPOINTS.PROBLEM.FETCH_ALL}`, {
@@ -776,26 +882,31 @@ export const apiClient = {
             ...params,
           },
         });
-        if (res?.Problem || res?.getProblemFromDB) {
-          const list = res.Problem || res.getProblemFromDB || [];
-          return {
-            problems: Array.isArray(list) ? list : [],
-            total: Array.isArray(list) ? list.length : 0,
-            page,
-            totalPages: Math.ceil((Array.isArray(list) ? list.length : 1) / limit),
-          };
+
+        const list = Array.isArray(res)
+          ? res
+          : res?.problem ?? res?.problems ?? res?.Problem ?? res?.getProblemFromDB;
+
+        if (Array.isArray(list)) {
+          sourceProblems = list.map((problem, index) => normalizeProblem(problem, index));
+        } else {
+          console.warn('[apiClient] getProblems returned an unexpected response shape:', res);
         }
       } catch (err) {
-        console.warn('[apiClient] getProblems failed, falling back to mock:', err);
+        if (err?.status === 404) {
+          return { problems: [], total: 0, page: 1, totalPages: 1, limit };
+        }
+        console.warn('[apiClient] getProblems failed:', err);
+        throw err;
       }
     }
 
-    await new Promise((r) => setTimeout(r, 90));
+    if (!sourceProblems) {
+      await new Promise((r) => setTimeout(r, 90));
+      sourceProblems = rawProblems.map((problem, index) => normalizeProblem(problem, index));
+    }
 
-    let filtered = rawProblems.map((p) => ({
-      ...p,
-      isBookmarked: userBookmarks.has(p.id),
-    }));
+    let filtered = sourceProblems;
 
     // Filter by search text
     if (q && q.trim()) {
