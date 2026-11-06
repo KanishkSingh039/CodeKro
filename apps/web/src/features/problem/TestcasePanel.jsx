@@ -20,8 +20,8 @@ export default function TestcasePanel({
     const newId = `custom-${Date.now()}`;
     const newCase = {
       id: newId,
-      input: 'nums = [1,2,3], target = 4',
-      expectedOutput: '[0,2]',
+      input: '',
+      expectedOutput: '',
       actualOutput: '',
       isPassed: null,
     };

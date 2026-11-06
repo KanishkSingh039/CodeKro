@@ -9,7 +9,7 @@ import DifficultyLabel from '../../components/ui/DifficultyLabel';
  * Displays the Daily Problem of the Day challenge with timer and Solve button.
  */
 export default function DailyProblemCard({ daily, onSolve, isLoading = false }) {
-  const initialSeconds = daily?.timeRemainingSeconds || 28410;
+  const initialSeconds = daily?.timeRemainingSeconds || 0;
   const [secondsLeft, setSecondsLeft] = useState(initialSeconds);
 
   useEffect(() => {
@@ -19,11 +19,25 @@ export default function DailyProblemCard({ daily, onSolve, isLoading = false }) 
     return () => clearInterval(interval);
   }, []);
 
-  if (isLoading || !daily?.problem) {
+  if (isLoading) {
     return (
       <Card padding="sm" className="space-y-3">
         <div className="h-4 w-32 bg-border-default rounded animate-pulse" />
         <div className="h-16 bg-border-default rounded animate-pulse" />
+      </Card>
+    );
+  }
+
+  if (!daily?.problem) {
+    return (
+      <Card padding="sm" className="space-y-3">
+        <div className="flex items-center gap-1.5 pb-2 border-b border-border-default text-xs font-semibold uppercase tracking-wider text-text-muted">
+          <Calendar className="w-3.5 h-3.5 text-accent" />
+          <span>Daily Challenge</span>
+        </div>
+        <p className="py-4 text-center text-[11px] text-text-muted">
+          No daily challenge available.
+        </p>
       </Card>
     );
   }

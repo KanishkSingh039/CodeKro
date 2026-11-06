@@ -21,9 +21,6 @@ export default function AccountForm({
   const [usernameStatus, setUsernameStatus] = useState(null); // 'available' | 'taken' | 'invalid'
   const [usernameMessage, setUsernameMessage] = useState('');
 
-  // Email verification state
-  const [isVerificationSent, setIsVerificationSent] = useState(false);
-
   // Password change state
   const [passwords, setPasswords] = useState({
     current: '',
@@ -145,33 +142,11 @@ export default function AccountForm({
           <label className="text-xs font-semibold text-text-primary block">
             {COPY.settings.accountForm.emailLabel}
           </label>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <Input
-              value={initialUser.email || 'kanishk@codekro.dev'}
-              readOnly
-              className="text-xs font-mono bg-bg-surface-subtle"
-            />
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="inline-flex items-center gap-1 text-[11px] font-mono text-accent bg-bg-surface-subtle px-2.5 py-1.5 rounded border border-border-subtle">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{COPY.settings.accountForm.emailVerified}</span>
-              </span>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setIsVerificationSent(true)}
-                className="text-xs h-8 whitespace-nowrap"
-              >
-                {COPY.settings.accountForm.verifyEmailBtn}
-              </Button>
-            </div>
-          </div>
-          {isVerificationSent && (
-            <p className="text-[11px] text-accent">
-              {COPY.settings.accountForm.verificationSent}
-            </p>
-          )}
+          <Input
+            value={initialUser.email || ''}
+            readOnly
+            className="text-xs font-mono bg-bg-surface-subtle"
+          />
         </div>
       </Card>
 
@@ -252,18 +227,23 @@ export default function AccountForm({
         <div className="divide-y divide-border-subtle">
           <div className="py-2.5 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-text-primary">Google</p>
-              <p className="text-[11px] text-text-muted">Connected as {initialUser.email}</p>
+              <p className="text-xs font-medium text-text-primary">Email</p>
+              <p className="text-[11px] text-text-muted">
+                {initialUser.email || 'Not available'}
+              </p>
             </div>
-            <span className="text-xs font-mono text-accent">Connected</span>
           </div>
 
           <div className="py-2.5 flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-text-primary">GitHub</p>
-              <p className="text-[11px] text-text-muted">Connected as @KanishkSingh039</p>
+              <p className="text-[11px] text-text-muted">
+                {initialUser.github ? `Connected as @${initialUser.github}` : 'Not connected'}
+              </p>
             </div>
-            <span className="text-xs font-mono text-accent">Connected</span>
+            <span className="text-xs font-mono text-text-muted">
+              {initialUser.github ? 'Connected' : 'Not connected'}
+            </span>
           </div>
         </div>
       </Card>

@@ -19,7 +19,7 @@ export default function ContestRatingChart({ contestsData, isLoading = false }) 
     );
   }
 
-  const { history = [], currentRating = 1842, maxRating = 1890, globalRank = 4210 } = contestsData;
+  const { history = [], currentRating = 0, maxRating = 0, globalRank = 0 } = contestsData;
 
   if (history.length === 0) {
     return (

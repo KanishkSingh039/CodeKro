@@ -11,49 +11,49 @@ import { COPY } from '../../constants/copy';
 export default function ProfileHeatmap({
   activity,
   isLoading = false,
-  selectedYear = '2026',
+  selectedYear,
   onYearChange,
 }) {
   const [hoveredDay, setHoveredDay] = useState(null);
+  const [currentYear] = useState(() => new Date().getFullYear());
+  const resolvedYear = selectedYear || String(currentYear);
+  const years = [String(currentYear), String(currentYear - 1), String(currentYear - 2)];
 
-  // Generate 52 weeks (364 days) of contribution cells
+  const activityByDate = useMemo(() => {
+    const map = new Map();
+    const entries = Array.isArray(activity?.heatmap) ? activity.heatmap : [];
+
+    entries.forEach((entry) => {
+      const date = entry?.date || entry?.day;
+      if (!date) return;
+      const count = Number(entry?.count ?? entry?.submissions ?? 0) || 0;
+      map.set(String(date).slice(0, 10), count);
+    });
+
+    return map;
+  }, [activity]);
+
+  // Build a real calendar grid; cells are empty unless the backend supplies activity.
   const yearWeeks = useMemo(() => {
+    const year = Number(resolvedYear) || currentYear;
+    const start = new Date(year, 0, 1);
+    start.setDate(start.getDate() - start.getDay());
     const weeks = [];
-    const seed = selectedYear === '2026' ? 42 : selectedYear === '2025' ? 19 : 7;
-    let dayCounter = 0;
 
-    for (let w = 0; w < 52; w++) {
+    const toDateKey = (date) =>
+      `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+        date.getDate()
+      ).padStart(2, '0')}`;
+
+    for (let w = 0; w < 53; w++) {
       const weekDays = [];
       for (let d = 0; d < 7; d++) {
-        dayCounter++;
-        // Pseudorandom yet stable distribution based on week and day
-        const pseudo = Math.sin(dayCounter * 12.9898 + seed) * 43758.5453;
-        const rand = pseudo - Math.floor(pseudo);
+        const date = new Date(start);
+        date.setDate(start.getDate() + w * 7 + d);
+        const dateStr = toDateKey(date);
+        const count = date.getFullYear() === year ? activityByDate.get(dateStr) || 0 : 0;
         let level = 0;
-        let count = 0;
-
-        if (rand > 0.45) {
-          if (rand > 0.88) {
-            level = 4;
-            count = Math.floor(rand * 6) + 4;
-          } else if (rand > 0.72) {
-            level = 3;
-            count = Math.floor(rand * 3) + 3;
-          } else if (rand > 0.58) {
-            level = 2;
-            count = 2;
-          } else {
-            level = 1;
-            count = 1;
-          }
-        }
-
-        // Approximate date
-        const monthNum = Math.floor((w / 52) * 12) + 1;
-        const dayNum = ((w * 7 + d) % 28) + 1;
-        const dateStr = `${selectedYear}-${String(monthNum).padStart(2, '0')}-${String(
-          dayNum
-        ).padStart(2, '0')}`;
+        if (count > 0) level = count >= 5 ? 4 : count >= 3 ? 3 : count >= 2 ? 2 : 1;
 
         weekDays.push({
           date: dateStr,
@@ -63,21 +63,26 @@ export default function ProfileHeatmap({
       }
       weeks.push(weekDays);
     }
+
     return weeks;
-  }, [selectedYear]);
+  }, [resolvedYear, activityByDate, currentYear]);
 
   // Aggregate stats
   const totalSubmissionsInYear = useMemo(() => {
-    return yearWeeks.reduce((acc, week) => {
-      return acc + week.reduce((wAcc, day) => wAcc + day.count, 0);
-    }, 0);
-  }, [yearWeeks]);
+    let total = 0;
+    activityByDate.forEach((count, date) => {
+      if (date.startsWith(`${resolvedYear}-`)) total += count;
+    });
+    return total;
+  }, [activityByDate, resolvedYear]);
 
   const activeDaysInYear = useMemo(() => {
-    return yearWeeks.reduce((acc, week) => {
-      return acc + week.filter((day) => day.count > 0).length;
-    }, 0);
-  }, [yearWeeks]);
+    let total = 0;
+    activityByDate.forEach((count, date) => {
+      if (date.startsWith(`${resolvedYear}-`) && count > 0) total += 1;
+    });
+    return total;
+  }, [activityByDate, resolvedYear]);
 
   if (isLoading) {
     return (
@@ -88,7 +93,7 @@ export default function ProfileHeatmap({
     );
   }
 
-  const { currentStreak = 14, longestStreak = 48 } = activity || {};
+  const { currentStreak = 0, longestStreak = 0 } = activity || {};
 
   const getCellColor = (level) => {
     switch (level) {
@@ -107,7 +112,6 @@ export default function ProfileHeatmap({
   };
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const years = ['2026', '2025', '2024'];
 
   return (
     <Card padding="md" className="space-y-4">
@@ -115,7 +119,7 @@ export default function ProfileHeatmap({
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border-default">
         <div className="flex items-center gap-4 text-xs">
           <span className="text-text-secondary">
-            Submissions in {selectedYear}:{' '}
+            Submissions in {resolvedYear}:{' '}
             <strong className="font-mono text-text-primary">{totalSubmissionsInYear}</strong>
           </span>
           <span className="text-text-muted hidden sm:inline-block">•</span>
@@ -138,7 +142,7 @@ export default function ProfileHeatmap({
         {/* Year Dropdown */}
         <div className="relative inline-block text-xs">
           <select
-            value={selectedYear}
+            value={resolvedYear}
             onChange={(e) => onYearChange && onYearChange(e.target.value)}
             className="appearance-none bg-bg-surface-subtle border border-border-default text-text-primary px-2.5 py-1 pr-6 rounded-[var(--radius-sm)] focus:border-accent focus:outline-none cursor-pointer"
             aria-label="Select activity calendar year"

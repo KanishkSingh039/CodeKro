@@ -15,6 +15,7 @@ export default function LoginForm({ onSwitchToRegister, onSuccess }) {
   });
 
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -34,20 +35,17 @@ export default function LoginForm({ onSwitchToRegister, onSuccess }) {
     }
 
     setErrors({});
+    setServerError('');
     setLoading(true);
 
     try {
-      // Connect to API client stub (no backend mutations)
       await apiClient.login({
         email: formData.email,
         password: formData.password,
       });
-      if (onSuccess) {
-        // Pass email so AuthCard can transition to the OTP verification step
-        onSuccess(formData.email);
-      }
+      onSuccess?.();
     } catch (err) {
-      console.error(err);
+      setServerError(err?.message || 'Unable to sign in. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -98,6 +96,12 @@ export default function LoginForm({ onSwitchToRegister, onSuccess }) {
           label={COPY.auth.fields.rememberMe}
         />
       </div>
+
+      {serverError && (
+        <p role="alert" className="text-xs text-error">
+          {serverError}
+        </p>
+      )}
 
       {/* Primary Submit Button */}
       <Button

@@ -186,6 +186,7 @@ export default function DashboardView({ onNavigateProblem }) {
       <div className="shrink-0">
         <GreetingRow
           user={user}
+          featuredProblem={problems[0]}
           onContinueProblem={(p) => {
             if (onNavigateProblem) onNavigateProblem(p);
           }}

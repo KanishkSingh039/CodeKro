@@ -28,7 +28,7 @@ export default function ProblemTopBar({
   onPickRandom,
   theme = 'dark',
   onToggleTheme,
-  user = { username: 'kanishk' },
+  user = {},
 }) {
   const [showTimer, setShowTimer] = useState(false);
   const [timerRunning, setTimerRunning] = useState(false);

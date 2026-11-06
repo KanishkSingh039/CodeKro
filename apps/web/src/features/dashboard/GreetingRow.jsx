@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, ArrowRight } from 'lucide-react';
+import { Play } from 'lucide-react';
 import Button from '../../components/ui/Button';
 
 /**
@@ -8,10 +8,11 @@ import Button from '../../components/ui/Button';
  */
 export default function GreetingRow({
   user,
+  featuredProblem,
   onContinueProblem,
 }) {
   const username = user?.name || user?.username || 'Developer';
-  const lastProblem = user?.lastAttemptedProblem;
+  const lastProblem = user?.lastAttemptedProblem || featuredProblem;
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border-default">
@@ -24,8 +25,8 @@ export default function GreetingRow({
         </p>
       </div>
 
-      <div className="shrink-0">
-        {lastProblem ? (
+      {lastProblem && (
+        <div className="shrink-0">
           <Button
             type="button"
             variant="primary"
@@ -35,22 +36,11 @@ export default function GreetingRow({
           >
             <Play className="w-4 h-4 fill-current shrink-0" />
             <span className="truncate max-w-[220px]">
-              Continue: {lastProblem.title}
+              {user?.lastAttemptedProblem ? 'Continue' : 'Start'}: {lastProblem.title}
             </span>
           </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="primary"
-            size="md"
-            onClick={() => onContinueProblem && onContinueProblem({ id: 1, title: 'Two Sum' })}
-            className="w-full sm:w-auto gap-2"
-          >
-            <span>Start your first problem</span>
-            <ArrowRight className="w-4 h-4" />
-          </Button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

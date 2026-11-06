@@ -6,7 +6,7 @@ import AccountForm from './AccountForm';
 import PreferencesForm from './PreferencesForm';
 import PrivacyForm from './PrivacyForm';
 import NotificationsForm from './NotificationsForm';
-import { apiClient } from '../../lib/api';
+import { apiClient, getAuthUser } from '../../lib/api';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 /**
@@ -24,11 +24,13 @@ export default function SettingsView({
   const [errorMessage, setErrorMessage] = useState('');
 
   const queryClient = useQueryClient();
+  const currentUsername = getAuthUser()?.username || '';
 
   // Queries for all settings datasets
   const profileQuery = useQuery({
-    queryKey: ['profile', 'kanishk'],
-    queryFn: () => apiClient.getUserProfile('kanishk'),
+    queryKey: ['profile', currentUsername],
+    queryFn: () => apiClient.getUserProfile(currentUsername),
+    enabled: Boolean(currentUsername),
   });
 
   const preferencesQuery = useQuery({
@@ -67,7 +69,7 @@ export default function SettingsView({
   const updateProfileMutation = useMutation({
     mutationFn: (data) => apiClient.updateProfile(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile', 'kanishk'] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       setIsFormDirty(false);
       showToast('Profile updated successfully.');
     },
@@ -164,6 +166,7 @@ export default function SettingsView({
       {/* Profile Tab */}
       {activeTab === 'profile' && (
         <ProfileForm
+          key={profileQuery.data?.id || 'profile-loading'}
           initialProfile={profileQuery.data}
           isSaving={updateProfileMutation.isPending}
           onSave={(data) => updateProfileMutation.mutate(data)}
@@ -174,6 +177,7 @@ export default function SettingsView({
       {/* Account Tab */}
       {activeTab === 'account' && (
         <AccountForm
+          key={profileQuery.data?.id || 'account-loading'}
           initialUser={profileQuery.data}
           onDeleteAccount={async (phrase) => {
             await apiClient.deleteAccount(phrase);
@@ -185,6 +189,7 @@ export default function SettingsView({
       {/* Preferences Tab */}
       {activeTab === 'preferences' && (
         <PreferencesForm
+          key={preferencesQuery.isSuccess ? 'preferences-loaded' : 'preferences-loading'}
           initialPreferences={preferencesQuery.data}
           isSaving={updatePreferencesMutation.isPending}
           onSave={(data) => updatePreferencesMutation.mutate(data)}
@@ -195,6 +200,7 @@ export default function SettingsView({
       {/* Privacy Tab */}
       {activeTab === 'privacy' && (
         <PrivacyForm
+          key={privacyQuery.isSuccess ? 'privacy-loaded' : 'privacy-loading'}
           initialPrivacy={privacyQuery.data}
           isSaving={updatePrivacyMutation.isPending}
           onSave={(data) => updatePrivacyMutation.mutate(data)}
@@ -205,6 +211,7 @@ export default function SettingsView({
       {/* Notifications Tab */}
       {activeTab === 'notifications' && (
         <NotificationsForm
+          key={notificationsQuery.isSuccess ? 'notifications-loaded' : 'notifications-loading'}
           initialNotifications={notificationsQuery.data}
           isSaving={updateNotificationsMutation.isPending}
           onSave={(data) => updateNotificationsMutation.mutate(data)}

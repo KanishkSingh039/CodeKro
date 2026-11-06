@@ -26,9 +26,12 @@ export default function AppLayout({
   onRouteChange,
   theme = 'dark',
   onToggleTheme,
-  user = { username: 'kanishk', name: 'Kanishk Singh', email: 'kanishk@codekro.dev' },
+  user = {},
   onGlobalSearch,
 }) {
+  const displayName = user?.name || user?.username || 'Account';
+  const displayUsername = user?.username || '';
+  const avatarInitials = (displayUsername || displayName || '?').slice(0, 2).toUpperCase();
   const isDark = theme === 'dark';
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -158,25 +161,15 @@ export default function AppLayout({
                 className="p-1.5 rounded-[var(--radius-sm)] border border-border-default bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover transition-colors cursor-pointer relative"
               >
                 <Bell className="w-4 h-4" />
-                {/* Clean unread indicator dot in green */}
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-accent ring-2 ring-bg-surface" />
               </button>
 
               {isNotifOpen && (
                 <div className="absolute right-0 mt-2 w-72 bg-bg-surface border border-border-default rounded-[var(--radius-md)] shadow-lg py-2 z-50 text-xs">
                   <div className="px-3 py-1.5 border-b border-border-subtle flex items-center justify-between font-medium">
                     <span>Notifications</span>
-                    <span className="text-[10px] text-text-muted">2 unread</span>
                   </div>
-                  <div className="divide-y divide-border-subtle max-h-60 overflow-y-auto">
-                    <div className="px-3 py-2 hover:bg-bg-surface-hover cursor-pointer">
-                      <p className="text-text-primary font-medium">Weekly Contest 412</p>
-                      <p className="text-[11px] text-text-muted">Registration confirmed. Starts in 2 days.</p>
-                    </div>
-                    <div className="px-3 py-2 hover:bg-bg-surface-hover cursor-pointer">
-                      <p className="text-text-primary font-medium">Daily Streak Achieved</p>
-                      <p className="text-[11px] text-text-muted">14-day milestone reached! Keep it up.</p>
-                    </div>
+                  <div className="px-3 py-6 text-center text-text-muted">
+                    No notifications yet.
                   </div>
                 </div>
               )}
@@ -201,10 +194,10 @@ export default function AppLayout({
                 aria-expanded={isUserMenuOpen}
               >
                 <div className="w-6 h-6 rounded bg-bg-surface-subtle border border-border-default flex items-center justify-center text-[11px] font-mono font-medium text-accent">
-                  {user.username.slice(0, 2).toUpperCase()}
+                  {avatarInitials}
                 </div>
                 <span className="text-xs font-medium text-text-primary hidden sm:inline-block max-w-[90px] truncate">
-                  {user.username}
+                  {displayUsername || displayName}
                 </span>
                 <ChevronDown className="w-3 h-3 text-text-muted" />
               </button>
@@ -212,8 +205,10 @@ export default function AppLayout({
               {isUserMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-bg-surface border border-border-default rounded-[var(--radius-md)] shadow-lg py-1.5 z-50 text-xs">
                   <div className="px-3 py-1.5 border-b border-border-subtle">
-                    <p className="font-semibold text-text-primary">{user.name}</p>
-                    <p className="text-[11px] text-text-muted truncate">{user.email}</p>
+                    <p className="font-semibold text-text-primary">{displayName}</p>
+                    {user?.email && (
+                      <p className="text-[11px] text-text-muted truncate">{user.email}</p>
+                    )}
                   </div>
                   <div className="py-1">
                     <button

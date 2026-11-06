@@ -21,7 +21,8 @@ import { COPY } from '../../constants/copy';
  * keyboard shortcuts, and responsive layout.
  */
 export default function ProblemWorkspace({
-  slug = 'two-sum',
+  slug = '',
+  user = {},
   onBackToList,
   onNavigateSlug,
   theme = 'dark',
@@ -47,6 +48,40 @@ export default function ProblemWorkspace({
     queryFn: () => apiClient.getProblemSubmissions(problem?.id),
     enabled: Boolean(problem?.id),
   });
+
+  // 3. Fetch the user's problems for prev/next/random navigation.
+  const { data: problemList } = useQuery({
+    queryKey: ['problems', 'workspace-navigation'],
+    queryFn: () => apiClient.getProblems({ page: 1, limit: 100 }),
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const navigationProblems = problemList?.problems || [];
+  const currentProblemIndex = navigationProblems.findIndex(
+    (item) =>
+      String(item.id) === String(problem?.id) ||
+      (item.titleSlug && item.titleSlug === problem?.titleSlug)
+  );
+
+  const navigateRelative = (offset) => {
+    if (!onNavigateSlug || navigationProblems.length === 0) return;
+    const index = currentProblemIndex >= 0 ? currentProblemIndex : 0;
+    const target =
+      navigationProblems[
+        (index + offset + navigationProblems.length) % navigationProblems.length
+      ];
+    if (target?.titleSlug) onNavigateSlug(target.titleSlug);
+  };
+
+  const navigateRandom = () => {
+    if (!onNavigateSlug || navigationProblems.length === 0) return;
+    const candidates = navigationProblems.filter(
+      (item) => String(item.id) !== String(problem?.id)
+    );
+    const pool = candidates.length > 0 ? candidates : navigationProblems;
+    const target = pool[Math.floor(Math.random() * pool.length)];
+    if (target?.titleSlug) onNavigateSlug(target.titleSlug);
+  };
 
   // UI state
   const [leftTab, setLeftTab] = useState('description');
@@ -302,10 +337,11 @@ export default function ProblemWorkspace({
     <div className="h-screen w-full bg-bg-base text-text-primary flex flex-col overflow-hidden select-none">
       {/* 48px Compact Top Bar */}
       <ProblemTopBar
+        user={user}
         onBackToList={onBackToList}
-        onPrevProblem={() => onNavigateSlug && onNavigateSlug('trapping-rain-water')}
-        onNextProblem={() => onNavigateSlug && onNavigateSlug('longest-substring-without-repeating-characters')}
-        onPickRandom={() => onNavigateSlug && onNavigateSlug('trapping-rain-water')}
+        onPrevProblem={() => navigateRelative(-1)}
+        onNextProblem={() => navigateRelative(1)}
+        onPickRandom={navigateRandom}
         theme={theme}
         onToggleTheme={onToggleTheme}
       />
@@ -407,9 +443,7 @@ export default function ProblemWorkspace({
                   runResult={runResult}
                   isLoading={isJudging}
                   loadingMessage={judgeMessage}
-                  onNextProblem={() =>
-                    onNavigateSlug && onNavigateSlug('trapping-rain-water')
-                  }
+                  onNextProblem={() => navigateRelative(1)}
                   onAddFailingToTestCases={(failingCase) => {
                     setTestCases([...testCases, failingCase]);
                     setConsoleTab('testcase');

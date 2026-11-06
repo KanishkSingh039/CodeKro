@@ -20,13 +20,13 @@ export default function SolvedOverview({ stats, isLoading = false }) {
   }
 
   const {
-    totalSolved = 284,
-    totalProblems = 3120,
-    easy = { solved: 142, total: 820 },
-    medium = { solved: 118, total: 1650 },
-    hard = { solved: 24, total: 650 },
-    acceptanceRate = 68.4,
-    totalSubmissions = 412,
+    totalSolved = 0,
+    totalProblems = 0,
+    easy = { solved: 0, total: 0 },
+    medium = { solved: 0, total: 0 },
+    hard = { solved: 0, total: 0 },
+    acceptanceRate = 0,
+    totalSubmissions = 0,
   } = stats;
 
   const radius = 48;

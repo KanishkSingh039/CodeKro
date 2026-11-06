@@ -63,16 +63,10 @@ export default function OtpVerifyForm({ email, onVerified, onBack, autoSendOnMou
     setSuccessMsg('');
     setIsSending(true);
     try {
-      if (!API_CONFIG.USE_MOCK) {
-        await request(`${API_CONFIG.AUTH_SERVICE_URL}/auth/otp/generate`, {
-          method: 'POST',
-          body: { email },
-        });
-      } else {
-        // Mock: simulate network delay
-        await new Promise((r) => setTimeout(r, 800));
-        console.info('[OTP] Mock OTP sent to', email);
-      }
+      await request(`${API_CONFIG.AUTH_SERVICE_URL}/auth/generateotp`, {
+        method: 'POST',
+        body: { email },
+      });
       setSentOnce(true);
       startCountdown();
       setOtp(''); // clear any previous entry
@@ -101,16 +95,10 @@ export default function OtpVerifyForm({ email, onVerified, onBack, autoSendOnMou
     setVerifyError('');
     setIsVerifying(true);
     try {
-      if (!API_CONFIG.USE_MOCK) {
-        await request(`${API_CONFIG.AUTH_SERVICE_URL}/auth/otp/verify`, {
-          method: 'POST',
-          body: { email, otp },
-        });
-      } else {
-        // Mock: simulate network delay; accept any 6-digit code
-        await new Promise((r) => setTimeout(r, 900));
-        console.info('[OTP] Mock verification passed for', email, 'otp:', otp);
-      }
+      await request(`${API_CONFIG.AUTH_SERVICE_URL}/auth/verifyotp`, {
+        method: 'POST',
+        body: { email, otp },
+      });
       setSuccessMsg('Email verified! Redirecting…');
       setTimeout(() => onVerified?.(), 1200);
     } catch (err) {

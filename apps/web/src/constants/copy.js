@@ -354,17 +354,6 @@ public:
       secondaryCta: 'Browse problems',
       note: 'Free to start. No credit card required.',
     },
-    productPreview: {
-      sampleProblemTitle: 'Two Sum',
-      difficulty: 'Easy',
-      sampleDescription: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
-      sampleInput: 'nums = [2,7,11,15], target = 9',
-      sampleOutput: '[0,1]',
-      statusAccepted: 'Accepted',
-      runtime: '4 ms (estimated)',
-      memory: '10.4 MB (estimated)',
-      verdictCaption: 'AI-evaluated verdict',
-    },
     problemStrip: {
       title: 'Explore algorithmic challenges',
       subtitle: 'From fundamental data structures to advanced graph theory and dynamic programming.',
@@ -515,5 +504,4 @@ public:
     },
   },
 };
-
 

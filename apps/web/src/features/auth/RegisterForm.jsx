@@ -17,6 +17,7 @@ export default function RegisterForm({ onSwitchToLogin, onSuccess }) {
   });
 
   const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -45,22 +46,23 @@ export default function RegisterForm({ onSwitchToLogin, onSuccess }) {
     }
 
     setErrors({});
+    setServerError('');
     setLoading(true);
 
     try {
-      // Connect to API client stub (no backend mutations)
       await apiClient.register({
         name: formData.name,
         username: formData.username,
         email: formData.email,
         password: formData.password,
       });
-      if (onSuccess) {
-        // Pass the registered email so AuthCard can transition to the OTP step
-        onSuccess(formData.email);
-      }
+      await apiClient.login({
+        email: formData.email,
+        password: formData.password,
+      });
+      onSuccess?.();
     } catch (err) {
-      console.error(err);
+      setServerError(err?.message || 'Unable to create your account. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -150,6 +152,12 @@ export default function RegisterForm({ onSwitchToLogin, onSuccess }) {
           </span>
         </Checkbox>
       </div>
+
+      {serverError && (
+        <p role="alert" className="text-xs text-error">
+          {serverError}
+        </p>
+      )}
 
       {/* Primary Submit Button */}
       <Button

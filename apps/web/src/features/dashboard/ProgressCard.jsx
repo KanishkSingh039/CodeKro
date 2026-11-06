@@ -18,10 +18,10 @@ export default function ProgressCard({ stats, isLoading = false }) {
 
   const {
     totalSolved = 0,
-    totalProblems = 3120,
-    easy = { solved: 0, total: 820 },
-    medium = { solved: 0, total: 1650 },
-    hard = { solved: 0, total: 650 },
+    totalProblems = 0,
+    easy = { solved: 0, total: 0 },
+    medium = { solved: 0, total: 0 },
+    hard = { solved: 0, total: 0 },
     acceptanceRate = 0,
   } = stats;
 

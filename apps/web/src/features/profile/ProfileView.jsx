@@ -21,14 +21,14 @@ import { Lock, AlertCircle, ArrowLeft, RotateCw } from 'lucide-react';
  * privacy shields, 404 not found, and loading skeletons.
  */
 export default function ProfileView({
-  username = 'kanishk',
+  username = '',
   onNavigateSettings,
   onNavigateProblem,
   onBackToDashboard,
 }) {
   const [activeTab, setActiveTab] = useState('submissions');
   const [submissionsPage, setSubmissionsPage] = useState(1);
-  const [calendarYear, setCalendarYear] = useState('2026');
+  const [calendarYear, setCalendarYear] = useState(() => String(new Date().getFullYear()));
 
   // 1. Fetch user profile
   const profileQuery = useQuery({

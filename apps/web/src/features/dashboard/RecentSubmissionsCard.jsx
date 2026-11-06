@@ -66,6 +66,11 @@ export default function RecentSubmissionsCard({
       </div>
 
       {/* Submissions list */}
+      {submissions.length === 0 ? (
+        <p className="py-4 text-center text-[11px] text-text-muted">
+          No submissions yet.
+        </p>
+      ) : (
       <div className="divide-y divide-border-subtle">
         {submissions.map((sub) => (
           <div key={sub.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between gap-2">
@@ -88,6 +93,7 @@ export default function RecentSubmissionsCard({
           </div>
         ))}
       </div>
+      )}
     </Card>
   );
 }

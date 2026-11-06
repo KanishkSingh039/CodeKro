@@ -42,7 +42,7 @@ function formatLocalDate(isoString) {
  * Displays 2-3 upcoming contests with user's local timezone and registration action.
  */
 export default function UpcomingContestsCard({ contests = [], isLoading = false }) {
-  const [registeredIds, setRegisteredIds] = useState(new Set(['c-412']));
+  const [registeredIds, setRegisteredIds] = useState(new Set());
 
   const toggleRegister = (id) => {
     setRegisteredIds((prev) => {
@@ -82,6 +82,11 @@ export default function UpcomingContestsCard({ contests = [], isLoading = false 
       </div>
 
       {/* Contests List */}
+      {contests.length === 0 ? (
+        <p className="py-4 text-center text-[11px] text-text-muted">
+          No upcoming contests available.
+        </p>
+      ) : (
       <div className="divide-y divide-border-subtle">
         {contests.map((contest) => {
           const isRegistered = registeredIds.has(contest.id);
@@ -130,6 +135,7 @@ export default function UpcomingContestsCard({ contests = [], isLoading = false 
           );
         })}
       </div>
+      )}
     </Card>
   );
 }
