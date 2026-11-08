@@ -43,8 +43,8 @@ const executionWorker=async()=>{
                         language:language,
                         code:code,
                         input:input,
-                        output:output,
-                        error:error,
+                        output:output ?? "",
+                        error:error ?? "",
                         judgement:judgement
                     });
                 if(String(judgement?.verdict || "").toUpperCase()==="ACCEPTED"){

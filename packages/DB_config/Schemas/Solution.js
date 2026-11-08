@@ -10,7 +10,7 @@ const SolutionSchema=new mongoose.Schema({
     },
     output:{
         type:String,
-        required:true,
+        default:"",
         maxlength:MAX_TEXT_LENGTH
     },
     input:{
