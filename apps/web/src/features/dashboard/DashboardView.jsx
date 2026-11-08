@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Sparkles } from 'lucide-react';
 import { apiClient } from '../../lib/api';
 import GreetingRow from './GreetingRow';
 import TopicChips from './TopicChips';
@@ -10,6 +11,11 @@ import UpcomingContestsCard from './UpcomingContestsCard';
 import RecentSubmissionsCard from './RecentSubmissionsCard';
 import FilterBar from '../../components/ui/FilterBar';
 import DataTable from '../../components/ui/DataTable';
+import Button from '../../components/ui/Button';
+
+const GENERATION_POLL_INTERVAL_MS = 1200;
+const GENERATION_TIMEOUT_MS = 120000;
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 /**
  * Read initial filters from browser URL query params
@@ -37,6 +43,7 @@ const getFiltersFromURL = () => {
 export default function DashboardView({ onNavigateProblem }) {
   const [filters, setFilters] = useState(getFiltersFromURL);
   const [randomNotice, setRandomNotice] = useState(null);
+  const [generationPrompt, setGenerationPrompt] = useState('');
   const queryClient = useQueryClient();
 
   // Sync state when browser back/forward buttons are clicked
@@ -145,6 +152,42 @@ export default function DashboardView({ onNavigateProblem }) {
     });
   };
 
+  const generationMutation = useMutation({
+    mutationFn: async (service) => {
+      const queued = await apiClient.generateProblem(service);
+      const deadline = Date.now() + GENERATION_TIMEOUT_MS;
+
+      while (Date.now() < deadline) {
+        const status = await apiClient.getProblemGenerationStatus(queued.jobId);
+
+        if (status.state === 'completed') {
+          if (!status.problem) throw new Error('Generated problem data was not returned.');
+          return status.problem;
+        }
+        if (status.state === 'failed') {
+          throw new Error(status.error || 'Problem generation failed.');
+        }
+
+        await wait(GENERATION_POLL_INTERVAL_MS);
+      }
+
+      throw new Error('Problem generation timed out. Please try again.');
+    },
+    onSuccess: (problem) => {
+      setGenerationPrompt('');
+      queryClient.invalidateQueries({ queryKey: ['problems'] });
+      if (onNavigateProblem) onNavigateProblem(problem);
+    },
+  });
+
+  const handleGenerateProblem = (event) => {
+    event.preventDefault();
+    const service = generationPrompt.trim();
+    if (!service || generationMutation.isPending) return;
+
+    generationMutation.mutate(service);
+  };
+
   // 3. User session stats
   const { data: userStats, isLoading: isStatsLoading } = useQuery({
     queryKey: ['stats'],
@@ -201,6 +244,47 @@ export default function DashboardView({ onNavigateProblem }) {
             if (onNavigateProblem) onNavigateProblem(p);
           }}
         />
+      </div>
+
+      <div className="shrink-0 rounded-[var(--radius-sm)] border border-border-default bg-bg-surface p-3">
+        <form onSubmit={handleGenerateProblem} className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Sparkles className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-accent" />
+            <input
+              type="text"
+              value={generationPrompt}
+              onChange={(event) => setGenerationPrompt(event.target.value)}
+              disabled={generationMutation.isPending}
+              maxLength={2000}
+              placeholder="Describe a problem to generate, for example: medium sliding window problem"
+              aria-label="Problem generation request"
+              className="w-full h-9 pl-9 pr-3 text-xs bg-bg-input border border-border-default rounded-[var(--radius-sm)] text-text-primary placeholder:text-text-muted focus:border-accent focus:outline-none disabled:opacity-60"
+            />
+          </div>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            loading={generationMutation.isPending}
+            disabled={!generationPrompt.trim() || generationMutation.isPending}
+            className="sm:w-auto"
+          >
+            Generate problem
+          </Button>
+        </form>
+
+        {generationMutation.isPending && (
+          <p className="mt-2 text-[11px] text-text-muted">
+            Generating the problem and preparing its test cases, starter code, and editorial...
+          </p>
+        )}
+
+        {generationMutation.isError && (
+          <p className="mt-2 text-xs text-error" role="alert">
+            {generationMutation.error?.message || 'Problem generation failed.'}
+          </p>
+        )}
+
       </div>
 
       {/* Random Notice Notification if triggered */}

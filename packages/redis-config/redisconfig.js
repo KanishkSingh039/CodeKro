@@ -42,7 +42,7 @@ const logger=require('@codekro/logger');
 
         const transaction=client.multi();
         transaction.del(key);
-        transaction.rPush(key,...updatedItems);
+        transaction.rPush(key,updatedItems);
         if(ttl>0) transaction.expire(key,ttl);
         await transaction.exec();
         return true;

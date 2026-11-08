@@ -294,7 +294,6 @@ const normalizeProblem = (problem, index) => {
         output: testCase.expectedOutput,
         explanation: '',
       }));
-
   return {
     ...problem,
     id,
@@ -492,6 +491,45 @@ export const apiClient = {
       page: validPage,
       totalPages,
       limit,
+    };
+  },
+
+  async generateProblem(service) {
+    const requestText = String(service || '').trim();
+    if (!requestText) {
+      throw new ApiError('Describe the problem you want to generate.', 400);
+    }
+
+    const data = await request(
+      `${API_CONFIG.PROBLEM_SERVICE_URL}${ENDPOINTS.PROBLEM.AI_SERVICE}`,
+      {
+        method: 'POST',
+        body: { service: requestText },
+      }
+    );
+    const jobId = data?.job_id ?? data?.jobId;
+
+    if (jobId === undefined || jobId === null) {
+      throw new ApiError('Problem generation did not return a job id.', 502, data);
+    }
+
+    return { ...data, jobId: String(jobId) };
+  },
+
+  async getProblemGenerationStatus(jobId) {
+    if (!jobId) {
+      throw new ApiError('A generation job id is required.', 400);
+    }
+
+    const data = await request(
+      `${API_CONFIG.PROBLEM_SERVICE_URL}${ENDPOINTS.PROBLEM.AI_SERVICE}/${encodeURIComponent(jobId)}`
+    );
+
+    return {
+      ...data,
+      jobId: String(data?.job_id ?? jobId),
+      state: String(data?.state || '').toLowerCase(),
+      problem: data?.problem ? normalizeProblem(data.problem, 0) : null,
     };
   },
 

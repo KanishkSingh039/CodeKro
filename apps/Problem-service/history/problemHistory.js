@@ -38,7 +38,7 @@ const writeCachedHistory = async (userId, problemsOldestFirst) => {
     transaction.del(key);
 
     if (problemsOldestFirst.length > 0) {
-        transaction.rPush(key, ...problemsOldestFirst.map((item) => JSON.stringify(toPlain(item))));
+        transaction.rPush(key, problemsOldestFirst.map((item) => JSON.stringify(toPlain(item))));
         transaction.lTrim(key, -HISTORY_LIMIT, -1);
         transaction.expire(key, HISTORY_TTL_SECONDS);
     }
