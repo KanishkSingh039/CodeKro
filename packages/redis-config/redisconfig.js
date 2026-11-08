@@ -22,5 +22,31 @@ const logger=require('@codekro/logger');
     logger.info("Redis connected");
     })
 
+    const updateCachedProblemState=async(userId,problemId,updates)=>{
+        const key=`problem:${userId}`;
+        const items=await client.lRange(key,0,-1);
+        if(items.length===0) return false;
 
-module.exports={client,connectredis}
+        const ttl=await client.ttl(key);
+        const updatedItems=items.map((item)=>{
+            try {
+                const problem=JSON.parse(item);
+                if(String(problem._id)===String(problemId)){
+                    Object.assign(problem,updates);
+                }
+                return JSON.stringify(problem);
+            } catch (error) {
+                return item;
+            }
+        });
+
+        const transaction=client.multi();
+        transaction.del(key);
+        transaction.rPush(key,...updatedItems);
+        if(ttl>0) transaction.expire(key,ttl);
+        await transaction.exec();
+        return true;
+    };
+
+
+module.exports={client,connectredis,updateCachedProblemState}

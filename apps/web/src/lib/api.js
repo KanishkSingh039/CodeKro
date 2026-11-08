@@ -31,6 +31,7 @@ export const ENDPOINTS = {
   PROBLEM: {
     FETCH_ALL: '/problem/fetchProblem',
     AI_SERVICE: '/problem/AI_service',
+    BOOKMARK: '/problem/bookmark',
     HEALTH: '/problem/health',
   },
   EXECUTION: {
@@ -288,7 +289,8 @@ const normalizeProblem = (problem, index) => {
     titleSlug: problem?.titleSlug || slugifyTitle(title),
     difficulty: difficulty.charAt(0).toUpperCase() + difficulty.slice(1),
     acceptanceRate: Number.isFinite(acceptanceRate) ? acceptanceRate : null,
-    status: problem?.status || 'todo',
+    status: problem?.submitted ? 'solved' : problem?.status || 'todo',
+    submitted: Boolean(problem?.submitted),
     frequency: Number.isFinite(frequency) ? frequency : null,
     topicTags: Array.isArray(problem?.topicTags) ? problem.topicTags : [],
     companies: Array.isArray(problem?.companies) ? problem.companies : [],
@@ -310,7 +312,7 @@ const normalizeProblem = (problem, index) => {
     likes: Number(problem?.likes) || 0,
     dislikes: Number(problem?.dislikes) || 0,
     userVote: null,
-    isBookmarked: false,
+    isBookmarked: Boolean(problem?.bookmarked),
     isEditorialLocked: false,
     description: problem?.description || '',
   };
@@ -520,8 +522,18 @@ export const apiClient = {
     return [];
   },
 
-  async toggleBookmark() {
-    throw new ApiError('Bookmarks are not available from the backend yet.', 501);
+  async toggleBookmark(problemId, bookmarked) {
+    if (!problemId) {
+      throw new ApiError('A problem id is required to update the bookmark.', 400);
+    }
+
+    return request(
+      `${API_CONFIG.PROBLEM_SERVICE_URL}${ENDPOINTS.PROBLEM.BOOKMARK}/${encodeURIComponent(problemId)}`,
+      {
+        method: 'PATCH',
+        body: { bookmarked: Boolean(bookmarked) },
+      }
+    );
   },
 
   async getProblemBySlug(slug) {
@@ -541,7 +553,6 @@ export const apiClient = {
 
     return {
       ...problem,
-      isBookmarked: false,
       description: problem.description || '',
       examples: problem.examples || [],
       constraints: problem.constraints || [],

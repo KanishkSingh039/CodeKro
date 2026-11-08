@@ -55,7 +55,14 @@ const problemSchema=new mongoose.Schema({
         lowercase:true,
         enum:["easy","medium","hard"]
     },
-    
+    bookmarked:{
+        type:Boolean,
+        default:false
+    },
+    submitted:{
+        type:Boolean,
+        default:false
+    }
 },{
     timestamps:true
 })

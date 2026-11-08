@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../../lib/api';
 import GreetingRow from './GreetingRow';
 import TopicChips from './TopicChips';
@@ -37,6 +37,7 @@ const getFiltersFromURL = () => {
 export default function DashboardView({ onNavigateProblem }) {
   const [filters, setFilters] = useState(getFiltersFromURL);
   const [randomNotice, setRandomNotice] = useState(null);
+  const queryClient = useQueryClient();
 
   // Sync state when browser back/forward buttons are clicked
   useEffect(() => {
@@ -121,6 +122,23 @@ export default function DashboardView({ onNavigateProblem }) {
 
   const problems = problemsData?.pages.flatMap((p) => p.problems) || [];
   const totalProblems = problemsData?.pages[0]?.total || 0;
+
+  const bookmarkMutation = useMutation({
+    mutationFn: ({ problemId, bookmarked }) => apiClient.toggleBookmark(problemId, bookmarked),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['problems'] });
+    },
+  });
+
+  const handleBookmarkToggle = (problemId) => {
+    const target = problems.find((problem) => String(problem.id) === String(problemId));
+    if (!target) return;
+
+    bookmarkMutation.mutate({
+      problemId,
+      bookmarked: !target.isBookmarked,
+    });
+  };
 
   // 3. User session stats
   const { data: userStats, isLoading: isStatsLoading } = useQuery({
@@ -224,6 +242,7 @@ export default function DashboardView({ onNavigateProblem }) {
             isError={isProblemsError}
             errorMessage={problemsError?.message}
             onRetry={refetchProblems}
+            onBookmarkToggle={handleBookmarkToggle}
             onProblemClick={(p) => {
               if (onNavigateProblem) onNavigateProblem(p);
             }}

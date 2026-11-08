@@ -175,6 +175,14 @@ export default function ProblemWorkspace({
       }),
   });
 
+  const bookmarkMutation = useMutation({
+    mutationFn: ({ problemId, bookmarked }) => apiClient.toggleBookmark(problemId, bookmarked),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['problem', slug] });
+      queryClient.invalidateQueries({ queryKey: ['problems'] });
+    },
+  });
+
   // Start polling judge status until terminal status
   const startPolling = useCallback((submissionId) => {
     setIsJudging(true);
@@ -202,6 +210,8 @@ export default function ProblemWorkspace({
             setShowAcceptedCelebration(true);
             setTimeout(() => setShowAcceptedCelebration(false), 3500);
             queryClient.invalidateQueries({ queryKey: ['problem-submissions'] });
+            queryClient.invalidateQueries({ queryKey: ['problem'] });
+            queryClient.invalidateQueries({ queryKey: ['problems'] });
           }
         }
       } catch (err) {
@@ -331,7 +341,15 @@ export default function ProblemWorkspace({
         onLeftTabChange={setLeftTab}
         submissionsCount={submissions.length}
         descriptionContent={
-          <ProblemDescription problem={problem} />
+          <ProblemDescription
+            problem={problem}
+            onBookmarkToggle={(problemId) =>
+              bookmarkMutation.mutate({
+                problemId,
+                bookmarked: !problem.isBookmarked,
+              })
+            }
+          />
         }
         editorialContent={
           <EditorialTab
