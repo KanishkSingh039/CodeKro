@@ -272,6 +272,7 @@ const normalizeProblem = (problem, index) => {
   const acceptanceRate = Number(problem?.acceptanceRate);
   const frequency = Number(problem?.frequency);
   const rawTestCases = Array.isArray(problem?.test_case) ? problem.test_case : [];
+  const rawExamples = Array.isArray(problem?.examples) ? problem.examples : [];
 
   const testCases = rawTestCases.map((testCase, testIndex) => ({
     id: `case-${testIndex + 1}`,
@@ -280,6 +281,19 @@ const normalizeProblem = (problem, index) => {
     actualOutput: '',
     isPassed: null,
   }));
+  const examples = rawExamples.length > 0
+    ? rawExamples.map((example, exampleIndex) => ({
+        id: example?.id ?? exampleIndex + 1,
+        input: formatValue(example?.input),
+        output: formatValue(example?.output ?? example?.expectedOutput),
+        explanation: example?.explanation || '',
+      }))
+    : testCases.map((testCase, testIndex) => ({
+        id: testIndex + 1,
+        input: testCase.input,
+        output: testCase.expectedOutput,
+        explanation: '',
+      }));
 
   return {
     ...problem,
@@ -295,12 +309,7 @@ const normalizeProblem = (problem, index) => {
     topicTags: Array.isArray(problem?.topicTags) ? problem.topicTags : [],
     companies: Array.isArray(problem?.companies) ? problem.companies : [],
     testCases,
-    examples: testCases.map((testCase, testIndex) => ({
-      id: testIndex + 1,
-      input: testCase.input,
-      output: testCase.expectedOutput,
-      explanation: '',
-    })),
+    examples,
     constraints: Array.isArray(problem?.constraints) ? problem.constraints : [],
     hints: Array.isArray(problem?.hints) ? problem.hints : [],
     editorial: Array.isArray(problem?.editorial) ? problem.editorial : [],

@@ -10,12 +10,25 @@ const problemgeneratorWorker=async()=>{
         const {user_id,service}=job.data;
         const history=await getProblemsForPrompt(user_id);
         const problemgenerated=await LLM_service(prompt(service,history));
+        const examples=problemgenerated.test_case.map((testCase,index)=>({
+            input:testCase.input,
+            output:testCase.output,
+            explanation:problemgenerated.examples?.[index]?.explanation || ""
+        }));
         const SaveProblemAtDB=await problem.create({
                     user_id:user_id,
                     title:problemgenerated.title,
                     description:problemgenerated.description,
                     test_case:problemgenerated.test_case,
-                    difficulty:problemgenerated.difficulty
+                    difficulty:problemgenerated.difficulty,
+                    topicTags:problemgenerated.topicTags,
+                    companies:problemgenerated.companies,
+                    constraints:problemgenerated.constraints,
+                    hints:problemgenerated.hints,
+                    followUp:problemgenerated.followUp,
+                    examples:examples,
+                    starterCode:problemgenerated.starterCode,
+                    editorial:problemgenerated.editorial
                 })
             await refreshProblemHistory(user_id);
             return SaveProblemAtDB;

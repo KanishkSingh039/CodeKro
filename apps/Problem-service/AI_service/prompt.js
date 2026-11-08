@@ -90,14 +90,38 @@ Return exactly these fields:
 "output": {}
 }
 ],
-"edge_cases": ["string"],
+"difficulty": "easy",
+"topicTags": ["string"],
+"companies": ["string"],
 "constraints": ["string"],
-"expected_output": "string",
-"complexity": {
-"time": "string",
-"space": "string"
+"hints": ["string"],
+"followUp": "string",
+"examples": [
+{
+"input": {},
+"output": {},
+"explanation": "string"
+}
+],
+"starterCode": {
+"cpp": "string",
+"java": "string",
+"python": "string",
+"javascript": "string",
+"go": "string"
 },
-"difficulty": "easy"
+"editorial": [
+{
+"title": "string",
+"description": "string",
+"timeComplexity": "string",
+"spaceComplexity": "string",
+"code": {
+"cpp": "string",
+"python": "string"
+}
+}
+]
 }
 
 Additional rules:
@@ -110,7 +134,21 @@ Use valid JSON types for all values.
 
 Difficulty must be exactly "easy", "medium", or "hard".
 
-Ensure the problem statement, examples, and expected output agree.
+Ensure the problem statement, examples, test cases, and expected outputs all agree.
+
+Provide 2 to 5 topicTags and 0 to 5 companies.
+
+Provide 1 to 6 constraints and 1 to 3 hints.
+
+Provide exactly one example for each test_case. Copy that test case's input and output exactly, add a short explanation, and do not invent additional examples.
+
+followUp may be an empty string when no follow-up is needed.
+
+starterCode must contain all five language keys: cpp, java, python, javascript, and go. Each value must be a complete starter function or class using the exact input format of the problem.
+
+editorial must contain at least one approach. Include valid code for cpp and python, with timeComplexity and spaceComplexity.
+
+All code must be plain text inside JSON strings and escaped so the complete response remains valid JSON.
 
 Return exactly one problem, not a list of problems.
 `;      

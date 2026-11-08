@@ -55,6 +55,39 @@ const problemSchema=new mongoose.Schema({
         lowercase:true,
         enum:["easy","medium","hard"]
     },
+    topicTags:{
+        type:[String],
+        default:[]
+    },
+    companies:{
+        type:[String],
+        default:[]
+    },
+    constraints:{
+        type:[String],
+        default:[]
+    },
+    hints:{
+        type:[String],
+        default:[]
+    },
+    followUp:{
+        type:String,
+        default:"",
+        trim:true
+    },
+    examples:{
+        type:[mongoose.Schema.Types.Mixed],
+        default:[]
+    },
+    starterCode:{
+        type:mongoose.Schema.Types.Mixed,
+        default:()=>({})
+    },
+    editorial:{
+        type:[mongoose.Schema.Types.Mixed],
+        default:[]
+    },
     bookmarked:{
         type:Boolean,
         default:false
@@ -68,4 +101,3 @@ const problemSchema=new mongoose.Schema({
 })
 problemSchema.index({user_id:1,createdAt:-1});
 module.exports=mongoose.model("problem",problemSchema);
-    
