@@ -114,7 +114,12 @@ export default function DashboardView({ onNavigateProblem }) {
     isFetchingNextPage,
   } = useInfiniteQuery({
     queryKey: ['problems', filters],
-    queryFn: ({ pageParam = 1 }) => apiClient.getProblems({ ...filters, page: pageParam }),
+    queryFn: ({ pageParam = 1 }) =>
+      apiClient.getProblems({
+        ...filters,
+        page: pageParam,
+        actiontype: filters.status === 'solved' ? 'submitted' : 'all',
+      }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,

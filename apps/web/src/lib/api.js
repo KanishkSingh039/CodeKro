@@ -382,6 +382,7 @@ export const apiClient = {
       tag = 'all',
       company = 'all',
       sort = 'id_asc',
+      actiontype = 'all',
     } = params;
 
     let authUser = getAuthUser();
@@ -398,7 +399,7 @@ export const apiClient = {
     try {
       const res = await request(`${API_CONFIG.PROBLEM_SERVICE_URL}${ENDPOINTS.PROBLEM.FETCH_ALL}`, {
         method: 'POST',
-        body: {},
+        body: { actiontype: actiontype === 'submitted' ? 'submitted' : 'all' },
       });
 
       const list = Array.isArray(res)
@@ -750,7 +751,12 @@ export const apiClient = {
   },
 
   async getUserSolved() {
-    return [];
+    try {
+      const data = await apiClient.getProblems({ page: 1, limit: 10000, actiontype: 'submitted' });
+      return data.problems;
+    } catch {
+      return [];
+    }
   },
 
   async getUserSubmissions() {
