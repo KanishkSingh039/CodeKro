@@ -708,11 +708,11 @@ export const apiClient = {
     const testResults = Array.isArray(judgement.testCases)
       ? judgement.testCases.map((testCase, index) => ({
           id: `case-${index + 1}`,
-          input: '',
-          expectedOutput: '',
-          actualOutput: '',
+          input: typeof testCase.input === 'object' ? JSON.stringify(testCase.input) : String(testCase.input ?? ''),
+          expectedOutput: typeof testCase.expectedOutput === 'object' ? JSON.stringify(testCase.expectedOutput) : String(testCase.expectedOutput ?? ''),
+          actualOutput: String(testCase.actualOutput ?? result.output ?? ''),
           isPassed: Boolean(testCase.passed),
-          stdout: '',
+          stdout: result.output || '',
         }))
       : [];
 

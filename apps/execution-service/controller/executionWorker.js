@@ -35,8 +35,16 @@ const executionWorker=async()=>{
                     return existingSolution;
                 }
                 const {output,error}=await dockerExecutor(language,input,code,problem,EXECUTION_TIMEOUT_MS);
-                    const judgement=await judgementService(output,test_case,code,language);
-                    const StoreSolutionInDB= await Solution.create({
+                const judgement=await judgementService(output,test_case,code,language);
+                if (Array.isArray(judgement?.testCases)) {
+                    judgement.testCases = judgement.testCases.map((tc, idx) => ({
+                        ...tc,
+                        input: test_case?.[idx]?.input ?? '',
+                        expectedOutput: test_case?.[idx]?.expectedOutput ?? test_case?.[idx]?.output ?? '',
+                        actualOutput: idx === 0 ? output : (tc.actualOutput ?? (tc.passed ? (test_case?.[idx]?.expectedOutput ?? test_case?.[idx]?.output) : output)),
+                    }));
+                }
+                const StoreSolutionInDB= await Solution.create({
                         job_id:job.id,
                         user_id:user,
                         problem_id:problem,
