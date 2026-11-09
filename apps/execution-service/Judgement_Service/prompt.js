@@ -27,6 +27,13 @@ Your responsibilities are:
 
 IMPORTANT:
 
+- EVALUATE ALL TEST CASES: You must evaluate every single test case provided in the "Test Case" list. The "testCases" array in your JSON output must include an evaluation entry for EVERY test case provided.
+- STRICT VERDICT CRITERIA:
+  - The overall "verdict" must be strictly based on the evaluation of ALL test cases.
+  - The submission is "ACCEPTED" if and ONLY if EVERY single test case passes (100% pass rate: all test cases have "passed": true and "failed": 0).
+  - IF EVEN ONE TEST CASE IS WRONG OR FAILS ("passed": false), THE SUBMISSION MUST NOT BE VALIDATED AS ACCEPTED. The overall "verdict" MUST BE "WRONG_ANSWER" (or "COMPILATION_ERROR" / "RUNTIME_ERROR" / "TIME_LIMIT_EXCEEDED" if compilation/runtime/timeout occurred). Under NO circumstances should "ACCEPTED" be returned if any test case fails.
+  - "score.total" must equal the total number of test cases. "score.passed" must equal the count of passed test cases. "score.failed" must equal the count of failed test cases.
+  - If any test case fails, "failedTestCase" must identify the first failing test case and "failureReason" must describe why it failed.
 - Never fabricate execution results.
 - Never fabricate execution time.
 - Never fabricate memory usage.
@@ -56,7 +63,7 @@ The AI is responsible for:
 Return this JSON structure:
 
 {
-    "verdict": "ACCEPTED | WRONG_ANSWER | TIME_LIMIT_EXCEEDED | MEMORY_LIMIT_EXCEEDED | RUNTIME_ERROR | COMPILATION_ERROR",
+    "verdict": "ACCEPTED (only if ALL test cases pass) | WRONG_ANSWER (if even one test case fails) | TIME_LIMIT_EXCEEDED | MEMORY_LIMIT_EXCEEDED | RUNTIME_ERROR | COMPILATION_ERROR",
 
     "score": {
         "passed": 0,

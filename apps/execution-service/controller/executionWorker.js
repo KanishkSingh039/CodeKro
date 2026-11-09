@@ -43,6 +43,10 @@ const executionWorker=async()=>{
                         expectedOutput: test_case?.[idx]?.expectedOutput ?? test_case?.[idx]?.output ?? '',
                         actualOutput: idx === 0 ? output : (tc.actualOutput ?? (tc.passed ? (test_case?.[idx]?.expectedOutput ?? test_case?.[idx]?.output) : output)),
                     }));
+                    const hasFailedCase = judgement.testCases.some(tc => !tc.passed) || (Number(judgement.score?.failed) > 0);
+                    if (hasFailedCase && String(judgement.verdict || "").toUpperCase().startsWith("ACCEPTED")) {
+                        judgement.verdict = "WRONG_ANSWER";
+                    }
                 }
                 const StoreSolutionInDB= await Solution.create({
                         job_id:job.id,
