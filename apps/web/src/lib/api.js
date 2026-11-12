@@ -326,6 +326,18 @@ const normalizeProblem = (problem, index) => {
   };
 };
 
+const toLocalDateKey = (date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate()
+  ).padStart(2, '0')}`;
+
+const getActivityLevel = (count) => {
+  if (count >= 5) return 4;
+  if (count >= 3) return 3;
+  if (count >= 2) return 2;
+  return count > 0 ? 1 : 0;
+};
+
 export const apiClient = {
   config: API_CONFIG,
   request,
@@ -546,11 +558,63 @@ export const apiClient = {
   },
 
   async getUserActivity() {
+    let problems = [];
+
+    try {
+      const data = await apiClient.getProblems({ page: 1, limit: 10000 });
+      problems = data.problems;
+    } catch {
+      problems = [];
+    }
+
+    const countsByDate = new Map();
+    problems.forEach((problem) => {
+      if (!problem?.solvedAt) return;
+      const solvedAt = new Date(problem.solvedAt);
+      if (Number.isNaN(solvedAt.getTime())) return;
+
+      const dateKey = toLocalDateKey(solvedAt);
+      countsByDate.set(dateKey, (countsByDate.get(dateKey) || 0) + 1);
+    });
+
+    const today = new Date();
+    const heatmap = [];
+
+    for (let offset = 364; offset >= 0; offset -= 1) {
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset);
+      const dateKey = toLocalDateKey(date);
+      const count = countsByDate.get(dateKey) || 0;
+      heatmap.push({ date: dateKey, count, level: getActivityLevel(count) });
+    }
+
+    let currentStreak = 0;
+    for (let offset = 0; offset < 365; offset += 1) {
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset);
+      if (!countsByDate.has(toLocalDateKey(date))) {
+        if (offset === 0) continue;
+        break;
+      }
+      currentStreak += 1;
+    }
+
+    let longestStreak = 0;
+    let streak = 0;
+    let previousDay = null;
+
+    Array.from(countsByDate.keys())
+      .sort()
+      .forEach((dateKey) => {
+        const day = Math.floor(Date.parse(`${dateKey}T00:00:00Z`) / 86400000);
+        streak = previousDay !== null && day - previousDay === 1 ? streak + 1 : 1;
+        longestStreak = Math.max(longestStreak, streak);
+        previousDay = day;
+      });
+
     return {
-      currentStreak: 0,
-      longestStreak: 0,
-      totalActiveDays: 0,
-      heatmap: [],
+      currentStreak,
+      longestStreak,
+      totalActiveDays: countsByDate.size,
+      heatmap,
     };
   },
 

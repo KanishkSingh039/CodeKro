@@ -95,6 +95,10 @@ const problemSchema=new mongoose.Schema({
     submitted:{
         type:Boolean,
         default:false
+    },
+    solvedAt:{
+        type:Date,
+        default:null
     }
 },{
     timestamps:true

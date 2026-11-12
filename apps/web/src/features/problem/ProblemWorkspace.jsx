@@ -212,6 +212,8 @@ export default function ProblemWorkspace({
             queryClient.invalidateQueries({ queryKey: ['problem-submissions'] });
             queryClient.invalidateQueries({ queryKey: ['problem'] });
             queryClient.invalidateQueries({ queryKey: ['problems'] });
+            queryClient.invalidateQueries({ queryKey: ['activity'] });
+            queryClient.invalidateQueries({ queryKey: ['user-activity'] });
           }
         }
       } catch (err) {

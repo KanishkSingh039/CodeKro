@@ -19,11 +19,12 @@ export default function StreakActivityCard({ activity, isLoading = false }) {
   }
 
   const { currentStreak = 0, longestStreak = 0, heatmap = [] } = activity;
+  const recentDays = heatmap.slice(-84);
 
   // Group 84 days into 12 columns of 7 days (weeks)
   const weeks = [];
   for (let w = 0; w < 12; w++) {
-    weeks.push(heatmap.slice(w * 7, w * 7 + 7));
+    weeks.push(recentDays.slice(w * 7, w * 7 + 7));
   }
 
   const getCellColor = (level) => {

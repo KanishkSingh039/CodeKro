@@ -8,13 +8,18 @@ const {client,updateCachedProblemState}=require("@codekro/redis-config");
 const logger=require("@codekro/logger");
 
 const markProblemSubmitted=async(userId,problemId)=>{
-    await Problem.updateOne(
+    const solvedAt=new Date();
+    const updatedProblem=await Problem.findOneAndUpdate(
         {_id:problemId,user_id:String(userId)},
-        {$set:{submitted:true}}
-    );
+        [{$set:{submitted:true,solvedAt:{$ifNull:["$solvedAt",solvedAt]}}}],
+        {returnDocument:"after",updatePipeline:true}
+    ).lean();
 
     try {
-        await updateCachedProblemState(String(userId),String(problemId),{submitted:true});
+        await updateCachedProblemState(String(userId),String(problemId),{
+            submitted:true,
+            solvedAt:updatedProblem?.solvedAt||solvedAt
+        });
     } catch (error) {
         logger.error(`Failed to update submitted cache: ${error.message}`);
         await client.del(`problem:${userId}`).catch(()=>undefined);
