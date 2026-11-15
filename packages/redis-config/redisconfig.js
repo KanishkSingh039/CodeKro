@@ -48,5 +48,29 @@ const logger=require('@codekro/logger');
         return true;
     };
 
+    const SOLUTION_CACHE_TTL_SECONDS=30*24*60*60;
+    const solutionKey=(userId,problemId)=>`solution:${userId}:${problemId}`;
 
-module.exports={client,connectredis,updateCachedProblemState}
+    const getCachedSolution=async(userId,problemId)=>{
+        const raw=await client.get(solutionKey(userId,problemId));
+        if(!raw) return null;
+
+        try {
+            return JSON.parse(raw);
+        } catch (error) {
+            await client.del(solutionKey(userId,problemId)).catch(()=>undefined);
+            return null;
+        }
+    };
+
+    const setCachedSolution=async(userId,problemId,solution)=>{
+        await client.set(
+            solutionKey(userId,problemId),
+            JSON.stringify(solution),
+            {EX:SOLUTION_CACHE_TTL_SECONDS}
+        );
+        return true;
+    };
+
+
+    module.exports={client,connectredis,updateCachedProblemState,getCachedSolution,setCachedSolution}

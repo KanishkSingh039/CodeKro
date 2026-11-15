@@ -4,7 +4,7 @@ const {dockerExecutor}=require("./dockerExecutor");
 const {judgementService}=require("./judgementService_controller");
 const {io_client}=require("@codekro/io-redis-config");
 const {Solution,problem:Problem}=require("@codekro/db_config");
-const {client,updateCachedProblemState}=require("@codekro/redis-config");
+const {client,updateCachedProblemState,setCachedSolution}=require("@codekro/redis-config");
 const logger=require("@codekro/logger");
 
 const markProblemSubmitted=async(userId,problemId)=>{
@@ -26,6 +26,16 @@ const markProblemSubmitted=async(userId,problemId)=>{
     }
 };
 
+const cacheSolution=async(solution)=>{
+    if(!solution) return;
+
+    try {
+        await setCachedSolution(String(solution.user_id),String(solution.problem_id),solution);
+    } catch (error) {
+        logger.error(`Failed to update solution cache: ${error.message}`);
+    }
+};
+
 const executionWorker=async()=>{
     logger.info("Execution worker started");
     const worker=new Worker("problem-queue",
@@ -37,6 +47,7 @@ const executionWorker=async()=>{
                     if(String(existingSolution.judgement?.verdict || "").toUpperCase()==="ACCEPTED"){
                         await markProblemSubmitted(user,problem);
                     }
+                    await cacheSolution(existingSolution);
                     return existingSolution;
                 }
                 const {output,error}=await dockerExecutor(language,input,code,problem,EXECUTION_TIMEOUT_MS);
@@ -53,17 +64,27 @@ const executionWorker=async()=>{
                         judgement.verdict = "WRONG_ANSWER";
                     }
                 }
-                const StoreSolutionInDB= await Solution.create({
-                        job_id:job.id,
-                        user_id:user,
-                        problem_id:problem,
-                        language:language,
-                        code:code,
-                        input:input,
-                        output:output ?? "",
-                        error:error ?? "",
-                        judgement:judgement
-                    });
+                const StoreSolutionInDB= await Solution.findOneAndUpdate(
+                        {user_id:String(user),problem_id:String(problem)},
+                        {$set:{
+                            job_id:job.id,
+                            user_id:String(user),
+                            problem_id:String(problem),
+                            language:language,
+                            code:code,
+                            input:input,
+                            output:output ?? "",
+                            error:error ?? "",
+                            judgement:judgement
+                        }},
+                        {
+                            sort:{updatedAt:-1},
+                            returnDocument:"after",
+                            upsert:true,
+                            setDefaultsOnInsert:true
+                        }
+                    );
+                await cacheSolution(StoreSolutionInDB);
                 if(String(judgement?.verdict || "").toUpperCase()==="ACCEPTED"){
                     await markProblemSubmitted(user,problem);
                 }
@@ -76,6 +97,7 @@ const executionWorker=async()=>{
                         if(String(duplicateSolution.judgement?.verdict || "").toUpperCase()==="ACCEPTED"){
                             await markProblemSubmitted(user,problem);
                         }
+                        await cacheSolution(duplicateSolution);
                         return duplicateSolution;
                     }
                 }

@@ -205,11 +205,11 @@ export default function ProblemWorkspace({
           activePollingRef.current = null;
           setIsJudging(false);
           setRunResult(statusData);
+          queryClient.invalidateQueries({ queryKey: ['problem-submissions'] });
 
           if (statusData.status === 'Accepted') {
             setShowAcceptedCelebration(true);
             setTimeout(() => setShowAcceptedCelebration(false), 3500);
-            queryClient.invalidateQueries({ queryKey: ['problem-submissions'] });
             queryClient.invalidateQueries({ queryKey: ['problem'] });
             queryClient.invalidateQueries({ queryKey: ['problems'] });
             queryClient.invalidateQueries({ queryKey: ['activity'] });

@@ -36,6 +36,7 @@ export const ENDPOINTS = {
   },
   EXECUTION: {
     EXECUTE: '/execution/service',
+    SOLUTION: '/execution/solution',
     HEALTH: '/execution/health',
   },
 };
@@ -336,6 +337,44 @@ const getActivityLevel = (count) => {
   if (count >= 3) return 3;
   if (count >= 2) return 2;
   return count > 0 ? 1 : 0;
+};
+
+const SUBMISSION_STATUS_BY_VERDICT = {
+  ACCEPTED: 'Accepted',
+  WRONG_ANSWER: 'Wrong Answer',
+  TIME_LIMIT_EXCEEDED: 'Time Limit Exceeded',
+  MEMORY_LIMIT_EXCEEDED: 'Memory Limit Exceeded',
+  RUNTIME_ERROR: 'Runtime Error',
+  COMPILATION_ERROR: 'Compile Error',
+};
+
+const normalizeSolution = (solution) => {
+  const judgement =
+    solution?.judgement && typeof solution.judgement === 'object' ? solution.judgement : {};
+  const performance =
+    judgement.performance && typeof judgement.performance === 'object'
+      ? judgement.performance
+      : {};
+  const verdict = String(judgement.verdict || '').toUpperCase();
+  const submittedAt = solution?.updatedAt || solution?.createdAt || '';
+
+  return {
+    id: String(solution?._id || solution?.job_id || ''),
+    problemId: solution?.problem_id || '',
+    code: solution?.code || '',
+    language: solution?.language || '',
+    status: SUBMISSION_STATUS_BY_VERDICT[verdict] || 'Unknown',
+    runtime:
+      performance.totalExecutionTime === undefined || performance.totalExecutionTime === null
+        ? '—'
+        : `${performance.totalExecutionTime} ms`,
+    memory:
+      performance.peakMemoryUsed === undefined || performance.peakMemoryUsed === null
+        ? '—'
+        : `${performance.peakMemoryUsed} MB`,
+    submittedAt,
+    relativeTime: submittedAt ? new Date(submittedAt).toLocaleString() : '',
+  };
 };
 
 export const apiClient = {
@@ -688,8 +727,18 @@ export const apiClient = {
     };
   },
 
-  async getProblemSubmissions() {
-    return [];
+  async getProblemSubmissions(problemId) {
+    if (!problemId) return [];
+
+    try {
+      const data = await request(
+        `${API_CONFIG.EXECUTION_SERVICE_URL}${ENDPOINTS.EXECUTION.SOLUTION}/${encodeURIComponent(problemId)}`
+      );
+      return data?.solution ? [normalizeSolution(data.solution)] : [];
+    } catch (err) {
+      if (err?.status === 404) return [];
+      throw err;
+    }
   },
 
   async runCode({ problemId, lang, code, testcases }) {
@@ -760,14 +809,6 @@ export const apiClient = {
     const result = data.result || {};
     const judgement = result.judgement && typeof result.judgement === 'object' ? result.judgement : {};
     const verdict = judgement.verdict || 'UNKNOWN';
-    const statusByVerdict = {
-      ACCEPTED: 'Accepted',
-      WRONG_ANSWER: 'Wrong Answer',
-      TIME_LIMIT_EXCEEDED: 'Time Limit Exceeded',
-      MEMORY_LIMIT_EXCEEDED: 'Memory Limit Exceeded',
-      RUNTIME_ERROR: 'Runtime Error',
-      COMPILATION_ERROR: 'Compile Error',
-    };
     const score = judgement.score || {};
     const testResults = Array.isArray(judgement.testCases)
       ? judgement.testCases.map((testCase, index) => ({
@@ -782,7 +823,7 @@ export const apiClient = {
 
     return {
       submissionId,
-      status: statusByVerdict[verdict] || 'Unknown',
+      status: SUBMISSION_STATUS_BY_VERDICT[verdict] || 'Unknown',
       passedCases: score.passed ?? 0,
       totalCases: score.total ?? 0,
       stdout: result.output || '',

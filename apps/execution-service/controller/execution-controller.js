@@ -1,5 +1,7 @@
 const logger = require("@codekro/logger");
 const { randomUUID } = require("crypto");
+const {Solution}=require("@codekro/db_config");
+const {getCachedSolution,setCachedSolution}=require("@codekro/redis-config");
 const {IOQueue}=require("../queue/IOqueue");
 const IOqueue=IOQueue("problem-queue");
 const execution = async (req, res) => {
@@ -48,4 +50,43 @@ const executionStatus = async (req,res)=>{
         return res.status(500).json({message:"Failed to get execution status"});
     }
 }
-module.exports={execution,executionStatus};
+const latestSolution = async (req,res) => {
+    const userId=req.user?.id;
+    const problemId=req.params.problemId;
+
+    if(!userId || !problemId)
+        return res.status(400).json({ message: "Bad Request" });
+
+    try {
+        let cachedSolution=null;
+        try {
+            cachedSolution=await getCachedSolution(String(userId),String(problemId));
+        } catch (error) {
+            logger.error(`Failed to read solution cache: ${error.message}`);
+        }
+
+        if(cachedSolution)
+            return res.status(200).json({ message: "Solution fetched", solution: cachedSolution });
+
+        const solution=await Solution.findOne({
+            user_id:String(userId),
+            problem_id:String(problemId)
+        }).sort({updatedAt:-1}).lean();
+
+        if(!solution)
+            return res.status(404).json({ message: "Solution not found" });
+
+        try {
+            await setCachedSolution(String(userId),String(problemId),solution);
+        } catch (error) {
+            logger.error(`Failed to cache solution: ${error.message}`);
+        }
+
+        return res.status(200).json({ message: "Solution fetched", solution });
+    } catch (error) {
+        logger.error(`Failed to fetch solution: ${error.message}`);
+        return res.status(500).json({ message: "Failed to fetch solution" });
+    }
+};
+
+module.exports={execution,executionStatus,latestSolution};
