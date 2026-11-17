@@ -17,16 +17,58 @@ const userSchema=new mongoose.Schema({
     username:{
         type:String,
         required:true,
-        // unique:true,
-        // trim:true,
-        // // lowercase:true,
-        // maxlength:30,
-        // match:[/^[a-z0-9_]+$/,"Username may contain only lowercase letters, numbers, and underscores"]
+        unique:true,
+        trim:true,
+        lowercase:true
     },
     picture:{
         type:String,
         trim:true
     },
+    bio:{
+        type:String,
+        default:"",
+        trim:true,
+        maxlength:160
+    },
+    location:{
+        type:String,
+        default:"",
+        trim:true,
+        maxlength:100
+    },
+    organization:{
+        type:String,
+        default:"",
+        trim:true,
+        maxlength:100
+    },
+    website:{
+        type:String,
+        default:"",
+        trim:true,
+        maxlength:200
+    },
+    github:{
+        type:String,
+        default:"",
+        trim:true,
+        maxlength:100
+    },
+    linkedin:{
+        type:String,
+        default:"",
+        trim:true,
+        maxlength:200
+    },
+    followers:[{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"CodeKroUser"
+    }],
+    following:[{
+        type:mongoose.Schema.Types.ObjectId,
+        ref:"CodeKroUser"
+    }],
     password:{
         type:String,
         trim:true
