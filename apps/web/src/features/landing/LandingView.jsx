@@ -4,7 +4,6 @@ import { Hero } from './Hero';
 import { ProblemPreviewTable } from './ProblemPreviewTable';
 import { HowItWorks } from './HowItWorks';
 import { FeatureGrid } from './FeatureGrid';
-import { ContestTeaser } from './ContestTeaser';
 import { ProgressPreview } from './ProgressPreview';
 import { FaqAccordion } from './FaqAccordion';
 import { FinalCta } from './FinalCta';
@@ -90,23 +89,20 @@ export function LandingView({ onNavigate, theme, onToggleTheme }) {
         {/* 5. Features Grid */}
         <FeatureGrid />
 
-        {/* 6. Upcoming Contests Teaser */}
-        <ContestTeaser />
-
-        {/* 7. Progress Preview */}
+        {/* 6. Progress Preview */}
         <ProgressPreview />
 
-        {/* 8. Frequently Asked Questions */}
+        {/* 7. Frequently Asked Questions */}
         <FaqAccordion />
 
-        {/* 9. Final CTA Band */}
+        {/* 8. Final CTA Band */}
         <FinalCta
           onGetStarted={handleStartSolving}
           onBrowseProblems={handleBrowseProblems}
         />
       </main>
 
-      {/* 10. Footer */}
+      {/* 9. Footer */}
       <LandingFooter />
     </div>
   );

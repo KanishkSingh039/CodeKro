@@ -1,24 +1,22 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import ProfileSidebar from './ProfileSidebar';
 import SolvedOverview from './SolvedOverview';
 import ProfileHeatmap from './ProfileHeatmap';
 import SubmissionsTab from './SubmissionsTab';
 import SolvedTab from './SolvedTab';
-import ContestsTab from './ContestsTab';
-import BadgesTab from './BadgesTab';
 import BookmarksTab from './BookmarksTab';
+import SubmissionDetailModal from '../problem/SubmissionDetailModal';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { apiClient } from '../../lib/api';
 import { COPY } from '../../constants/copy';
-import { Lock, AlertCircle, ArrowLeft, RotateCw } from 'lucide-react';
+import { AlertCircle, ArrowLeft, RotateCw } from 'lucide-react';
 
 /**
  * ProfileView Component
  * Complete public and owner profile workspace (/u/:username).
- * Manages desktop 4/8 two-column layout, mobile single column,
- * privacy shields, 404 not found, and loading skeletons.
+ * Public profiles show stats, solved-problem calendar, solved list, and read-only code.
  */
 export default function ProfileView({
   username = '',
@@ -26,67 +24,59 @@ export default function ProfileView({
   onNavigateProblem,
   onBackToDashboard,
 }) {
-  const [activeTab, setActiveTab] = useState('submissions');
+  const [activeTab, setActiveTab] = useState('solved');
   const [submissionsPage, setSubmissionsPage] = useState(1);
   const [calendarYear, setCalendarYear] = useState(() => String(new Date().getFullYear()));
+  const [selectedSolved, setSelectedSolved] = useState(null);
+  const queryClient = useQueryClient();
 
-  // 1. Fetch user profile
   const profileQuery = useQuery({
     queryKey: ['user-profile', username],
     queryFn: () => apiClient.getUserProfile(username),
     retry: false,
   });
 
-  // 2. Fetch user stats
-  const statsQuery = useQuery({
-    queryKey: ['user-stats', username],
-    queryFn: () => apiClient.getUserStats(),
-    enabled: !!profileQuery.data && !profileQuery.data.isPrivate,
-  });
+  const profile = profileQuery.data;
+  const isOwner = Boolean(profile?.isOwner);
 
-  // 3. Fetch user activity (heatmap & streaks)
   const activityQuery = useQuery({
     queryKey: ['user-activity', username, calendarYear],
-    queryFn: () => apiClient.getUserActivity(),
-    enabled: !!profileQuery.data && !profileQuery.data.isPrivate,
+    queryFn: () => apiClient.getUserActivity(username, calendarYear),
+    enabled: Boolean(profile),
   });
 
-  // 4. Fetch submissions
   const submissionsQuery = useQuery({
     queryKey: ['user-submissions', username, submissionsPage],
     queryFn: () => apiClient.getUserSubmissions(username, submissionsPage, 20),
-    enabled: !!profileQuery.data && (!profileQuery.data.isPrivate || profileQuery.data.isOwner),
+    enabled: Boolean(profile) && activeTab === 'submissions',
   });
 
-  // 5. Fetch solved problems
   const solvedQuery = useQuery({
     queryKey: ['user-solved', username],
     queryFn: () => apiClient.getUserSolved(username),
-    enabled: !!profileQuery.data && (!profileQuery.data.isPrivate || profileQuery.data.isOwner),
+    enabled: Boolean(profile) && activeTab === 'solved',
   });
 
-  // 6. Fetch contest rating data
-  const contestsQuery = useQuery({
-    queryKey: ['user-contests', username],
-    queryFn: () => apiClient.getUserContests(username),
-    enabled: !!profileQuery.data && (!profileQuery.data.isPrivate || profileQuery.data.isOwner),
-  });
-
-  // 7. Fetch badges
-  const badgesQuery = useQuery({
-    queryKey: ['user-badges', username],
-    queryFn: () => apiClient.getUserBadges(username),
-    enabled: !!profileQuery.data && (!profileQuery.data.isPrivate || profileQuery.data.isOwner),
-  });
-
-  // 8. Fetch bookmarks
   const bookmarksQuery = useQuery({
     queryKey: ['user-bookmarks', username],
     queryFn: () => apiClient.getUserBookmarks(username),
-    enabled: !!profileQuery.data,
+    enabled: Boolean(profile) && activeTab === 'bookmarks',
   });
 
-  // Handle 404 User Not Found
+  const solutionQuery = useQuery({
+    queryKey: ['user-solved-solution', username, selectedSolved?.id],
+    queryFn: () => apiClient.getUserSolution(username, selectedSolved?.id),
+    enabled: Boolean(profile) && Boolean(selectedSolved?.id),
+    retry: false,
+  });
+
+  const followMutation = useMutation({
+    mutationFn: (following) => apiClient.followUser(username, following),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile', username] });
+    },
+  });
+
   if (profileQuery.isError && profileQuery.error?.status === 404) {
     return (
       <div className="max-w-[640px] mx-auto py-16 text-center space-y-4">
@@ -102,12 +92,7 @@ export default function ProfileView({
           </p>
         </div>
         <div className="pt-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={onBackToDashboard}
-            className="text-xs"
-          >
+          <Button variant="secondary" size="sm" onClick={onBackToDashboard} className="text-xs">
             {COPY.profile.notFound.backHome}
           </Button>
         </div>
@@ -115,7 +100,6 @@ export default function ProfileView({
     );
   }
 
-  // Handle generic network error with Retry
   if (profileQuery.isError) {
     return (
       <div className="max-w-[640px] mx-auto py-16 text-center space-y-4">
@@ -141,20 +125,14 @@ export default function ProfileView({
     );
   }
 
-  const profile = profileQuery.data;
-  const isPrivateVisitor = profile?.isPrivate && !profile?.isOwner;
-
   const tabs = [
-    { id: 'submissions', label: COPY.profile.tabs.submissions },
     { id: 'solved', label: COPY.profile.tabs.solved },
-    { id: 'contests', label: COPY.profile.tabs.contests },
+    { id: 'submissions', label: COPY.profile.tabs.submissions },
     { id: 'bookmarks', label: COPY.profile.tabs.bookmarks },
-    { id: 'badges', label: COPY.profile.tabs.badges },
   ];
 
   return (
     <div className="max-w-[1280px] mx-auto space-y-6">
-      {/* Top back navigation */}
       <button
         type="button"
         onClick={onBackToDashboard}
@@ -164,120 +142,113 @@ export default function ProfileView({
         <span>Back to Problems</span>
       </button>
 
-      {/* Main Responsive Grid: Desktop (4 / 8 cols) | Mobile (Single Column) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column (Identity & Skills, 4 cols) */}
         <div className="lg:col-span-4">
           <Card padding="md">
             <ProfileSidebar
               profile={profile}
               isLoading={profileQuery.isLoading}
               onEditProfile={onNavigateSettings}
+              onFollow={(following) => followMutation.mutate(following)}
+              isFollowLoading={followMutation.isPending}
             />
           </Card>
         </div>
 
-        {/* Right Column (Activity & Content, 8 cols) */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Private Profile Notice for Visitors */}
-          {isPrivateVisitor ? (
-            <Card padding="lg" className="text-center py-16 space-y-3 border-border-default">
-              <div className="w-12 h-12 rounded-full bg-bg-surface-subtle border border-border-default flex items-center justify-center mx-auto text-text-muted">
-                <Lock className="w-5 h-5 text-accent" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-text-primary">
-                  {COPY.profile.privateProfile.title}
-                </h3>
-                <p className="text-xs text-text-secondary max-w-sm mx-auto">
-                  {COPY.profile.privateProfile.desc}
-                </p>
-              </div>
-            </Card>
-          ) : (
-            <>
-              {/* 1. Solved Overview Ring Card */}
-              <SolvedOverview
-                stats={statsQuery.data}
-                isLoading={statsQuery.isLoading || profileQuery.isLoading}
+          <SolvedOverview
+            stats={profile?.stats}
+            isLoading={profileQuery.isLoading}
+          />
+
+          <ProfileHeatmap
+            activity={activityQuery.data}
+            isLoading={activityQuery.isLoading || profileQuery.isLoading}
+            selectedYear={calendarYear}
+            onYearChange={setCalendarYear}
+          />
+
+          <div className="border-b border-border-default flex items-center gap-1 overflow-x-auto select-none">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-3.5 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+                    isActive
+                      ? 'border-accent text-accent font-semibold'
+                      : 'border-transparent text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="min-w-0">
+            {activeTab === 'solved' && (
+              <SolvedTab
+                solved={solvedQuery.data}
+                isLoading={solvedQuery.isLoading}
+                onSelectProblem={(item) => setSelectedSolved(item)}
               />
+            )}
 
-              {/* 2. 12-Month Contribution Heatmap Card */}
-              <ProfileHeatmap
-                activity={activityQuery.data}
-                isLoading={activityQuery.isLoading || profileQuery.isLoading}
-                selectedYear={calendarYear}
-                onYearChange={setCalendarYear}
+            {activeTab === 'submissions' && (
+              <SubmissionsTab
+                data={submissionsQuery.data}
+                isLoading={submissionsQuery.isLoading}
+                page={submissionsPage}
+                onPageChange={setSubmissionsPage}
+                onSelectProblem={onNavigateProblem}
               />
+            )}
 
-              {/* 3. Navigation Tabs */}
-              <div className="border-b border-border-default flex items-center gap-1 overflow-x-auto select-none">
-                {tabs.map((tab) => {
-                  const isActive = activeTab === tab.id;
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`px-3.5 py-2.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
-                        isActive
-                          ? 'border-accent text-accent font-semibold'
-                          : 'border-transparent text-text-secondary hover:text-text-primary'
-                      }`}
-                    >
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Tab Panels */}
-              <div className="min-w-0">
-                {activeTab === 'submissions' && (
-                  <SubmissionsTab
-                    data={submissionsQuery.data}
-                    isLoading={submissionsQuery.isLoading}
-                    page={submissionsPage}
-                    onPageChange={setSubmissionsPage}
-                    onSelectProblem={onNavigateProblem}
-                  />
-                )}
-
-                {activeTab === 'solved' && (
-                  <SolvedTab
-                    solved={solvedQuery.data}
-                    isLoading={solvedQuery.isLoading}
-                    onSelectProblem={onNavigateProblem}
-                  />
-                )}
-
-                {activeTab === 'contests' && (
-                  <ContestsTab
-                    contestsData={contestsQuery.data}
-                    isLoading={contestsQuery.isLoading}
-                  />
-                )}
-
-                {activeTab === 'bookmarks' && (
-                  <BookmarksTab
-                    bookmarks={bookmarksQuery.data}
-                    isLoading={bookmarksQuery.isLoading}
-                    isOwner={profile?.isOwner}
-                    onSelectProblem={onNavigateProblem}
-                  />
-                )}
-
-                {activeTab === 'badges' && (
-                  <BadgesTab
-                    badges={badgesQuery.data}
-                    isLoading={badgesQuery.isLoading}
-                  />
-                )}
-              </div>
-            </>
-          )}
+            {activeTab === 'bookmarks' && (
+              <BookmarksTab
+                bookmarks={bookmarksQuery.data}
+                isLoading={bookmarksQuery.isLoading}
+                isOwner={isOwner}
+                onSelectProblem={onNavigateProblem}
+              />
+            )}
+          </div>
         </div>
       </div>
+
+      {selectedSolved && solutionQuery.isLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-2xl bg-bg-surface border border-border-default rounded-[var(--radius-md)] p-8 text-center text-xs text-text-muted">
+            Loading submitted code...
+          </div>
+        </div>
+      )}
+
+      {selectedSolved && solutionQuery.isError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-bg-surface border border-border-default rounded-[var(--radius-md)] p-6 text-center space-y-3">
+            <p className="text-xs text-error">
+              {solutionQuery.error?.message || 'Submitted code is unavailable.'}
+            </p>
+            <Button variant="secondary" size="sm" onClick={() => setSelectedSolved(null)}>
+              Close
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {selectedSolved && solutionQuery.data && (
+        <SubmissionDetailModal
+          submission={{
+            ...solutionQuery.data,
+            problemTitle: selectedSolved.title,
+          }}
+          onClose={() => setSelectedSolved(null)}
+        />
+      )}
     </div>
   );
 }

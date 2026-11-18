@@ -8,10 +8,12 @@ const app=express();
 const registerRoute=require("../routes/register");
 const loginRoute=require("../routes/login");
 const otpRoute=require('../routes/Otp_router');
-app.use(express.json());
+const profileRoute=require('../routes/profile');
+app.use(express.json({ limit: '5mb' }));
 app.use("/auth",registerRoute);
 app.use("/auth",loginRoute);
 app.use("/auth",otpRoute);
+app.use("/auth",profileRoute);
 const PORT = process.env.PORT || 3011;
 
 app.get("/auth/health", (req, res) => {

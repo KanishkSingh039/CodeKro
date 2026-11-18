@@ -15,6 +15,7 @@ export default function SettingsView({
   initialTab = 'profile',
   onBackToProfile,
   onAccountDeleted,
+  onSessionRefresh,
 }) {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isFormDirty, setIsFormDirty] = useState(false);
@@ -22,7 +23,7 @@ export default function SettingsView({
   const [errorMessage, setErrorMessage] = useState('');
 
   const queryClient = useQueryClient();
-  const profileIdentifier = user?.email || user?.username || '';
+  const profileIdentifier = user?.username || user?.email || '';
 
   // Queries for all settings datasets
   const profileQuery = useQuery({
@@ -52,8 +53,12 @@ export default function SettingsView({
   const updateProfileMutation = useMutation({
     mutationFn: (data) => apiClient.updateProfile(data),
     onSuccess: () => {
+      setErrorMessage('');
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['me'] });
       setIsFormDirty(false);
+      if (onSessionRefresh) void onSessionRefresh();
       showToast('Profile updated successfully.');
     },
     onError: (err) => {
@@ -130,19 +135,8 @@ export default function SettingsView({
             await apiClient.deleteAccount(phrase);
             if (onAccountDeleted) onAccountDeleted();
           }}
+          onSessionRefresh={onSessionRefresh}
         />
-      )}
-
-      {['preferences', 'privacy', 'notifications'].includes(activeTab) && (
-        <div className="rounded-[var(--radius-md)] border border-border-default bg-bg-surface px-6 py-12 text-center space-y-2">
-          <AlertCircle className="w-5 h-5 mx-auto text-text-muted" />
-          <h3 className="text-sm font-semibold text-text-primary">
-            {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} settings unavailable
-          </h3>
-          <p className="text-xs text-text-muted">
-            These settings will appear after backend persistence is available.
-          </p>
-        </div>
       )}
     </SettingsLayout>
   );

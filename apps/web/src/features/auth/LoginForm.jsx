@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import Link from '../../components/ui/Link';
 import { COPY } from '../../constants/copy';
 import { apiClient } from '../../lib/api';
+import ForgotPasswordModal from './ForgotPasswordModal';
 
 export default function LoginForm({ onSwitchToRegister, onSuccess }) {
   const [formData, setFormData] = useState({
@@ -17,6 +18,7 @@ export default function LoginForm({ onSwitchToRegister, onSuccess }) {
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -52,7 +54,8 @@ export default function LoginForm({ onSwitchToRegister, onSuccess }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 text-left">
+    <>
+      <form onSubmit={handleSubmit} className="space-y-4 text-left">
       {/* Email input */}
       <Input
         id="login-email"
@@ -80,7 +83,14 @@ export default function LoginForm({ onSwitchToRegister, onSuccess }) {
         }}
         error={errors.password}
         rightAction={
-          <Link href="#forgot-password" variant="muted">
+          <Link
+            href="#forgot-password"
+            variant="muted"
+            onClick={(event) => {
+              event.preventDefault();
+              setShowForgotPassword(true);
+            }}
+          >
             {COPY.auth.fields.forgotPassword}
           </Link>
         }
@@ -124,7 +134,12 @@ export default function LoginForm({ onSwitchToRegister, onSuccess }) {
         >
           {COPY.auth.footer.signUp}
         </button>
-      </div>
-    </form>
+        </div>
+      </form>
+
+      {showForgotPassword && (
+        <ForgotPasswordModal onClose={() => setShowForgotPassword(false)} />
+      )}
+    </>
   );
 }

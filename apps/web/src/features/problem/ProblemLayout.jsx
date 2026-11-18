@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FileText, BookOpen, MessageSquare, History } from 'lucide-react';
+import { FileText, BookOpen, History } from 'lucide-react';
 import { COPY } from '../../constants/copy';
 
 const STORAGE_SPLIT_H = 'codekro_problem_split_h';
@@ -16,7 +16,6 @@ export default function ProblemLayout({
   onLeftTabChange,
   descriptionContent,
   editorialContent,
-  solutionsContent,
   submissionsContent,
   submissionsCount = 0,
 
@@ -122,7 +121,6 @@ export default function ProblemLayout({
   const leftTabs = [
     { id: 'description', label: COPY.problem.tabs.description, icon: FileText },
     { id: 'editorial', label: COPY.problem.tabs.editorial, icon: BookOpen },
-    { id: 'solutions', label: COPY.problem.tabs.solutions, icon: MessageSquare },
     {
       id: 'submissions',
       label: COPY.problem.tabs.submissions,
@@ -240,7 +238,6 @@ export default function ProblemLayout({
           <div className="flex-1 min-h-0 overflow-y-auto" role="tabpanel">
             {leftActiveTab === 'description' && descriptionContent}
             {leftActiveTab === 'editorial' && editorialContent}
-            {leftActiveTab === 'solutions' && solutionsContent}
             {leftActiveTab === 'submissions' && submissionsContent}
           </div>
         </section>

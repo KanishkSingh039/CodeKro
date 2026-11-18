@@ -99,7 +99,7 @@ const GoogleAuthCallback=async(req,res)=>{
             name:checktheexistinguserwiththisemail.name,
             username:checktheexistinguserwiththisemail.username,
             email:checktheexistinguserwiththisemail.email,
-            picture:checktheexistinguserwiththisemail.picture,
+            picture:String(checktheexistinguserwiththisemail.picture || "").startsWith("data:") ? "" : checktheexistinguserwiththisemail.picture,
             googlelogin:true
     },process.env.JWT_SECRET,{expiresIn:"1h"})
         return redirectToFrontend(res, jwtToken);

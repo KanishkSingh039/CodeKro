@@ -5,11 +5,10 @@ import {
   Globe,
   Calendar,
   Clock,
-  Trophy,
-  Award,
-  Zap,
   Users,
   Edit3,
+  UserPlus,
+  UserCheck,
 } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import TagChip from '../../components/ui/TagChip';
@@ -39,6 +38,8 @@ export default function ProfileSidebar({
   profile,
   isLoading = false,
   onEditProfile,
+  onFollow,
+  isFollowLoading = false,
 }) {
   if (isLoading || !profile) {
     return (
@@ -65,11 +66,9 @@ export default function ProfileSidebar({
     website = '',
     github = '',
     linkedin = '',
-    globalRank = 0,
-    contestRating = 0,
-    reputation = 0,
-    followersCount,
-    followingCount,
+    followersCount = 0,
+    followingCount = 0,
+    isFollowing = false,
     joinedDate = '',
     lastActive = '',
     skills = [],
@@ -128,7 +127,7 @@ export default function ProfileSidebar({
             <p className="text-xs font-mono text-text-secondary truncate mt-0.5">
               @{username}
             </p>
-            {isOwner && (
+            {isOwner ? (
               <div className="mt-2.5">
                 <Button
                   variant="secondary"
@@ -138,6 +137,23 @@ export default function ProfileSidebar({
                 >
                   <Edit3 className="w-3.5 h-3.5 text-text-muted" />
                   <span>{COPY.profile.editProfile}</span>
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-2.5">
+                <Button
+                  variant={isFollowing ? 'secondary' : 'primary'}
+                  size="sm"
+                  onClick={() => onFollow && onFollow(!isFollowing)}
+                  loading={isFollowLoading}
+                  className="w-full sm:w-auto h-7 text-xs flex items-center justify-center gap-1.5"
+                >
+                  {isFollowing ? (
+                    <UserCheck className="w-3.5 h-3.5" />
+                  ) : (
+                    <UserPlus className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isFollowing ? 'Following' : 'Follow'}</span>
                 </Button>
               </div>
             )}
@@ -210,53 +226,31 @@ export default function ProfileSidebar({
         )}
       </div>
 
-      {/* 3. Community & Ranking Stats Summary */}
+      {/* 3. Community Stats Summary */}
       <div className="border-t border-border-subtle pt-4 space-y-2.5">
         <h2 className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">
-          Ranking & Reputation
+          Community
         </h2>
         <div className="grid grid-cols-2 gap-2 text-xs">
           <div className="p-2 rounded bg-bg-surface-subtle border border-border-subtle">
             <div className="flex items-center gap-1.5 text-text-muted mb-0.5">
-              <Trophy className="w-3 h-3 text-text-muted" />
-              <span className="text-[11px]">Rank</span>
+              <Users className="w-3 h-3 text-text-muted" />
+              <span className="text-[11px]">Followers</span>
             </div>
             <div className="font-mono font-semibold text-text-primary">
-              #{globalRank.toLocaleString()}
+              {followersCount}
             </div>
           </div>
 
           <div className="p-2 rounded bg-bg-surface-subtle border border-border-subtle">
             <div className="flex items-center gap-1.5 text-text-muted mb-0.5">
-              <Award className="w-3 h-3 text-text-muted" />
-              <span className="text-[11px]">Rating</span>
+              <Users className="w-3 h-3 text-text-muted" />
+              <span className="text-[11px]">Following</span>
             </div>
             <div className="font-mono font-semibold text-text-primary">
-              {contestRating}
+              {followingCount}
             </div>
           </div>
-
-          <div className="p-2 rounded bg-bg-surface-subtle border border-border-subtle">
-            <div className="flex items-center gap-1.5 text-text-muted mb-0.5">
-              <Zap className="w-3 h-3 text-text-muted" />
-              <span className="text-[11px]">Reputation</span>
-            </div>
-            <div className="font-mono font-semibold text-text-primary">
-              {reputation}
-            </div>
-          </div>
-
-          {(followersCount !== undefined || followingCount !== undefined) && (
-            <div className="p-2 rounded bg-bg-surface-subtle border border-border-subtle">
-              <div className="flex items-center gap-1.5 text-text-muted mb-0.5">
-                <Users className="w-3 h-3 text-text-muted" />
-                <span className="text-[11px]">Community</span>
-              </div>
-              <div className="font-mono text-xs text-text-secondary truncate">
-                <strong className="text-text-primary">{followersCount ?? 0}</strong> followers
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -268,9 +262,7 @@ export default function ProfileSidebar({
           </h2>
           <div className="flex flex-wrap gap-1.5">
             {skills.map((s) => (
-              <TagChip key={s.topic} count={s.count}>
-                {s.topic}
-              </TagChip>
+              <TagChip key={s.topic} label={s.topic} count={s.count} />
             ))}
           </div>
         </div>

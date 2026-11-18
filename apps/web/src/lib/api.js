@@ -27,6 +27,15 @@ export const ENDPOINTS = {
     ME: '/auth/me',
     LOGOUT: '/auth/logout',
     HEALTH: '/auth/health',
+    PROFILE: '/auth/profile',
+    PROFILE_USERNAME: '/auth/profile/username',
+    PROFILE_AVATAR: '/auth/profile/avatar',
+    PROFILE_PASSWORD: '/auth/profile/password',
+    USER_SEARCH: '/auth/users/search',
+    CHECK_USERNAME: '/auth/users/check-username',
+    USERS: '/auth/users',
+    PASSWORD_RESET: '/auth/password/reset',
+    GENERATE_OTP: '/auth/generateotp',
   },
   PROBLEM: {
     FETCH_ALL: '/problem/fetchProblem',
@@ -327,18 +336,6 @@ const normalizeProblem = (problem, index) => {
   };
 };
 
-const toLocalDateKey = (date) =>
-  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
-    date.getDate()
-  ).padStart(2, '0')}`;
-
-const getActivityLevel = (count) => {
-  if (count >= 5) return 4;
-  if (count >= 3) return 3;
-  if (count >= 2) return 2;
-  return count > 0 ? 1 : 0;
-};
-
 const SUBMISSION_STATUS_BY_VERDICT = {
   ACCEPTED: 'Accepted',
   WRONG_ANSWER: 'Wrong Answer',
@@ -374,7 +371,22 @@ const normalizeSolution = (solution) => {
         : `${performance.peakMemoryUsed} MB`,
     submittedAt,
     relativeTime: submittedAt ? new Date(submittedAt).toLocaleString() : '',
+    problemTitle: solution?.problemTitle || '',
   };
+};
+
+const resolveProfileUsername = async (username) => {
+  const raw = String(username || '').trim();
+  if (raw) {
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }
+
+  const authUser = await hydrateAuthSession();
+  return authUser?.username || '';
 };
 
 export const apiClient = {
@@ -584,93 +596,40 @@ export const apiClient = {
     };
   },
 
-  async getUserStats() {
-    return {
+  async getUserStats(username) {
+    const empty = {
       totalSolved: 0,
       totalProblems: 0,
       easy: { solved: 0, total: 0 },
       medium: { solved: 0, total: 0 },
       hard: { solved: 0, total: 0 },
       acceptanceRate: 0,
-      globalRanking: 0,
+      totalSubmissions: 0,
     };
-  },
-
-  async getUserActivity() {
-    let problems = [];
 
     try {
-      const data = await apiClient.getProblems({ page: 1, limit: 10000 });
-      problems = data.problems;
+      const target = await resolveProfileUsername(username);
+      if (!target) return empty;
+
+      const data = await request(
+        `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.USERS}/${encodeURIComponent(target)}`
+      );
+      return data?.user?.stats || empty;
     } catch {
-      problems = [];
+      return empty;
     }
-
-    const countsByDate = new Map();
-    problems.forEach((problem) => {
-      if (!problem?.solvedAt) return;
-      const solvedAt = new Date(problem.solvedAt);
-      if (Number.isNaN(solvedAt.getTime())) return;
-
-      const dateKey = toLocalDateKey(solvedAt);
-      countsByDate.set(dateKey, (countsByDate.get(dateKey) || 0) + 1);
-    });
-
-    const today = new Date();
-    const heatmap = [];
-
-    for (let offset = 364; offset >= 0; offset -= 1) {
-      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset);
-      const dateKey = toLocalDateKey(date);
-      const count = countsByDate.get(dateKey) || 0;
-      heatmap.push({ date: dateKey, count, level: getActivityLevel(count) });
-    }
-
-    let currentStreak = 0;
-    for (let offset = 0; offset < 365; offset += 1) {
-      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset);
-      if (!countsByDate.has(toLocalDateKey(date))) {
-        if (offset === 0) continue;
-        break;
-      }
-      currentStreak += 1;
-    }
-
-    let longestStreak = 0;
-    let streak = 0;
-    let previousDay = null;
-
-    Array.from(countsByDate.keys())
-      .sort()
-      .forEach((dateKey) => {
-        const day = Math.floor(Date.parse(`${dateKey}T00:00:00Z`) / 86400000);
-        streak = previousDay !== null && day - previousDay === 1 ? streak + 1 : 1;
-        longestStreak = Math.max(longestStreak, streak);
-        previousDay = day;
-      });
-
-    return {
-      currentStreak,
-      longestStreak,
-      totalActiveDays: countsByDate.size,
-      heatmap,
-    };
   },
 
-  async getDailyProblem() {
-    return {
-      date: new Date().toISOString().split('T')[0],
-      timeRemainingSeconds: 0,
-      problem: null,
-    };
-  },
+  async getUserActivity(username, year) {
+    const target = await resolveProfileUsername(username);
+    if (!target) {
+      return { currentStreak: 0, longestStreak: 0, totalActiveDays: 0, heatmap: [] };
+    }
 
-  async getUpcomingContests() {
-    return [];
-  },
-
-  async getRecentSubmissions() {
-    return [];
+    return request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.USERS}/${encodeURIComponent(target)}/activity`,
+      { params: year ? { year } : undefined }
+    );
   },
 
   async toggleBookmark(problemId, bookmarked) {
@@ -834,81 +793,72 @@ export const apiClient = {
     };
   },
 
-  async voteProblem() {
-    throw new ApiError('Voting is not available from the backend yet.', 501);
-  },
-
   async getUserProfile(username) {
-    const authUser = await hydrateAuthSession();
-    if (!authUser?.id) {
+    const target = await resolveProfileUsername(username);
+    if (!target) {
       throw new ApiError('Sign in required to load a profile.', 401);
     }
 
-    const currentUsername = authUser.username || authUser.email?.split('@')[0] || '';
-    let normalized = String(username || '').trim().toLowerCase();
-    try {
-      normalized = decodeURIComponent(normalized);
-    } catch {
-      // Use the original identifier when the route contains malformed encoding.
-    }
-
-    const currentIdentifiers = new Set(
-      [authUser.id, authUser.username, authUser.name, authUser.email]
-        .filter(Boolean)
-        .map((value) => String(value).trim().toLowerCase())
+    const data = await request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.USERS}/${encodeURIComponent(target)}`
     );
-
-    if (normalized && !currentIdentifiers.has(normalized)) {
-      throw new ApiError(`User "${username}" not found`, 404);
-    }
-
-    return {
-      id: authUser.id,
-      username: currentUsername,
-      name: authUser.name || currentUsername,
-      email: authUser.email || '',
-      avatarUrl: authUser.picture || '',
-      bio: '',
-      location: '',
-      organization: '',
-      website: '',
-      github: '',
-      linkedin: '',
-      globalRank: 0,
-      contestRating: 0,
-      reputation: 0,
-      followersCount: 0,
-      followingCount: 0,
-      joinedDate: '',
-      lastActive: '',
-      isOwner: true,
-      isPrivate: false,
-      skills: [],
-      languages: [],
-    };
+    return data?.user || null;
   },
 
-  async getUserBadges() {
+  async getUserSolved(username) {
+    const target = await resolveProfileUsername(username);
+    if (!target) return [];
+
+    const data = await request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.USERS}/${encodeURIComponent(target)}/solved`
+    );
+    return data?.solved || [];
+  },
+
+  async getUserSolution(username, problemId) {
+    if (!problemId) {
+      throw new ApiError('A problem id is required to load submitted code.', 400);
+    }
+
+    const target = await resolveProfileUsername(username);
+    if (!target) {
+      throw new ApiError('Sign in required to load submitted code.', 401);
+    }
+
+    const data = await request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.USERS}/${encodeURIComponent(target)}/solved/${encodeURIComponent(problemId)}`
+    );
+    return data?.solution ? normalizeSolution(data.solution) : null;
+  },
+
+  async followUser(username, following = true) {
+    const target = String(username || '').trim();
+    if (!target) {
+      throw new ApiError('A username is required to follow a user.', 400);
+    }
+
+    return request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.USERS}/${encodeURIComponent(target)}/follow`,
+      {
+        method: 'PATCH',
+        body: { following: Boolean(following) },
+      }
+    );
+  },
+
+  async searchUsers(query) {
+    const q = String(query || '').trim();
+    if (!q) return [];
+
+    const data = await request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.USER_SEARCH}`,
+      { params: { q } }
+    );
+    return data?.users || [];
+  },
+
+  async getRecentSubmissions() {
     return [];
-  },
-
-  async getUserContests() {
-    return {
-      currentRating: 0,
-      maxRating: 0,
-      globalRank: 0,
-      totalContests: 0,
-      history: [],
-    };
-  },
-
-  async getUserSolved() {
-    try {
-      const data = await apiClient.getProblems({ page: 1, limit: 10000, actiontype: 'submitted' });
-      return data.problems;
-    } catch {
-      return [];
-    }
   },
 
   async getUserSubmissions() {
@@ -924,48 +874,83 @@ export const apiClient = {
     return [];
   },
 
-  async getPreferences() {
-    return {};
+  async updateProfile(data = {}) {
+    const payload = {
+      name: data.name,
+      bio: data.bio,
+      location: data.location,
+      organization: data.organization,
+      website: data.website,
+      github: data.github,
+      linkedin: data.linkedin,
+    };
+
+    if (data.avatarUrl !== undefined && data.avatarUrl !== (getAuthUser()?.picture || '')) {
+      await apiClient.updateAvatar(data.avatarUrl);
+    }
+
+    const response = await request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.PROFILE}`,
+      { method: 'PATCH', body: payload }
+    );
+    await hydrateAuthSession();
+    return response;
   },
 
-  async updatePreferences() {
-    throw new ApiError('Preferences are not available from the backend yet.', 501);
+  async updateUsername(username) {
+    const response = await request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.PROFILE_USERNAME}`,
+      { method: 'PATCH', body: { username } }
+    );
+    await hydrateAuthSession();
+    return response;
   },
 
-  async getPrivacy() {
-    return {};
+  async updateAvatar(avatarUrl) {
+    const response = await request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.PROFILE_AVATAR}`,
+      { method: 'PATCH', body: { avatarUrl: avatarUrl || '' } }
+    );
+    await hydrateAuthSession();
+    return response;
   },
 
-  async updatePrivacy() {
-    throw new ApiError('Privacy settings are not available from the backend yet.', 501);
+  async checkUsernameAvailable(username) {
+    return request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.CHECK_USERNAME}`,
+      { params: { username } }
+    );
   },
 
-  async getNotifications() {
-    return {};
+  async changePassword(currentPassword, newPassword) {
+    return request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.PROFILE_PASSWORD}`,
+      {
+        method: 'PATCH',
+        body: { currentPassword, newPassword },
+      }
+    );
   },
 
-  async updateNotifications() {
-    throw new ApiError('Notification settings are not available from the backend yet.', 501);
+  async requestPasswordReset(email) {
+    return request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.GENERATE_OTP}`,
+      { method: 'POST', body: { email } }
+    );
   },
 
-  async updateProfile() {
-    throw new ApiError('Profile editing is not available from the backend yet.', 501);
+  async resetPassword(email, otp, newPassword) {
+    return request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.PASSWORD_RESET}`,
+      { method: 'POST', body: { email, otp, newPassword } }
+    );
   },
 
-  async checkUsernameAvailable() {
-    throw new ApiError('Username checks are not available from the backend yet.', 501);
-  },
-
-  async uploadAvatar() {
-    throw new ApiError('Avatar uploads are not available from the backend yet.', 501);
-  },
-
-  async changePassword() {
-    throw new ApiError('Password changes are not available from the backend yet.', 501);
-  },
-
-  async deleteAccount() {
-    throw new ApiError('Account deletion is not available from the backend yet.', 501);
+  async deleteAccount(confirmation) {
+    return request(
+      `${API_CONFIG.AUTH_SERVICE_URL}${ENDPOINTS.AUTH.PROFILE}`,
+      { method: 'DELETE', body: { confirmation } }
+    );
   },
 
   async getFeaturedProblems(limit = 5) {
@@ -987,21 +972,8 @@ export const apiClient = {
     }
   },
 
-  async getUpcomingContest() {
-    return null;
-  },
-
-  async getPublicStats() {
-    return {
-      totalProblems: 0,
-      totalTopics: 0,
-      supportedLanguages: 0,
-    };
-  },
 };
 
 export const getFeaturedProblems = (limit) => apiClient.getFeaturedProblems(limit);
-export const getUpcomingContest = () => apiClient.getUpcomingContest();
-export const getPublicStats = () => apiClient.getPublicStats();
 
 export default apiClient;

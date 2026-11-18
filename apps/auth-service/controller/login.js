@@ -33,7 +33,7 @@ const login=async(req,res)=>{
         email:checkemail.email,
         username:checkemail.username,
         name:checkemail.name,
-        picture:checkemail.picture || "",
+        picture:String(checkemail.picture || "").startsWith("data:") ? "" : (checkemail.picture || ""),
         googlelogin:false,
         
     },process.env.JWT_SECRET,{expiresIn:"1h"});

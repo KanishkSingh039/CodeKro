@@ -5,7 +5,6 @@ import ProblemTopBar from './ProblemTopBar';
 import ProblemLayout from './ProblemLayout';
 import ProblemDescription from './ProblemDescription';
 import EditorialTab from './EditorialTab';
-import SolutionsTab from './SolutionsTab';
 import SubmissionTable from './SubmissionTable';
 import EditorPanel from './EditorPanel';
 import TestcasePanel from './TestcasePanel';
@@ -360,7 +359,6 @@ export default function ProblemWorkspace({
             onUnlock={() => {}}
           />
         }
-        solutionsContent={<SolutionsTab solutions={problem.solutions} />}
         submissionsContent={<SubmissionTable submissions={submissions} />}
 
         // Right Pane - Editor

@@ -20,6 +20,8 @@ export default function AccountForm({
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState(null); // 'available' | 'taken' | 'invalid'
   const [usernameMessage, setUsernameMessage] = useState('');
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
+  const [usernameSaveError, setUsernameSaveError] = useState('');
 
   // Password change state
   const [passwords, setPasswords] = useState({
@@ -64,6 +66,27 @@ export default function AccountForm({
 
     return () => clearTimeout(timer);
   }, [username, initialUser.username]);
+
+  const handleUsernameSubmit = async (event) => {
+    event.preventDefault();
+    setUsernameSaveError('');
+
+    if (!username || username === initialUser.username) return;
+    if (usernameStatus !== 'available') {
+      setUsernameSaveError('Choose an available username before saving.');
+      return;
+    }
+
+    setIsSavingUsername(true);
+    try {
+      await apiClient.updateUsername(username);
+      window.location.assign(`/u/${encodeURIComponent(username)}`);
+    } catch (err) {
+      setUsernameSaveError(err.message || 'Failed to update username.');
+    } finally {
+      setIsSavingUsername(false);
+    }
+  };
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
@@ -135,6 +158,28 @@ export default function AccountForm({
           <p className="text-[11px] text-text-muted">
             {COPY.settings.accountForm.usernameHelp}
           </p>
+          {usernameSaveError && (
+            <p className="text-xs text-error">{usernameSaveError}</p>
+          )}
+          <div className="flex justify-end pt-1">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={handleUsernameSubmit}
+              loading={isSavingUsername}
+              disabled={
+                isSavingUsername ||
+                isCheckingUsername ||
+                !username ||
+                username === initialUser.username ||
+                usernameStatus !== 'available'
+              }
+              className="text-xs"
+            >
+              Save username
+            </Button>
+          </div>
         </div>
 
         {/* Email */}

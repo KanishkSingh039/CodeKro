@@ -7,6 +7,7 @@ import { COPY } from '../../constants/copy';
 /**
  * SolvedTab Component
  * Filterable table of solved problems with difficulty, topic tag, and language filters.
+ * Selecting a row opens the submitted code in a read-only modal.
  */
 export default function SolvedTab({
   solved = [],
@@ -112,7 +113,8 @@ export default function SolvedTab({
                     <td className="py-2.5 px-4 font-medium">
                       <button
                         type="button"
-                        onClick={() => onSelectProblem && onSelectProblem(item.titleSlug)}
+                        onClick={() => onSelectProblem && onSelectProblem(item)}
+                        title="View submitted code (read-only)"
                         className="text-text-primary hover:text-accent transition-colors truncate block text-left cursor-pointer"
                       >
                         {item.frontendQuestionId}. {item.title}

@@ -57,7 +57,7 @@ export default function App() {
 
     if (pathname.startsWith('/settings')) {
       const parts = pathname.split('/').filter(Boolean);
-      const settingsTab = parts[1] || 'profile';
+      const settingsTab = ['profile', 'account'].includes(parts[1]) ? parts[1] : 'profile';
       return { route: 'settings', username, slug: '', tab: 'login', settingsTab };
     }
 
@@ -278,6 +278,10 @@ export default function App() {
             onBackToProfile={() => navigateTo(profilePath())}
             onAccountDeleted={() => {
               void handleLogout();
+            }}
+            onSessionRefresh={async () => {
+              const refreshedUser = await apiClient.hydrateSession();
+              setSessionUser(refreshedUser);
             }}
           />
         </AppLayout>

@@ -4,12 +4,10 @@ import {
   Sun,
   Moon,
   Search,
-  Bell,
   User,
   Settings,
   Bookmark,
   Code2,
-  Trophy,
   History,
   LayoutDashboard,
   LogOut,
@@ -36,12 +34,10 @@ export default function AppLayout({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const searchInputRef = useRef(null);
   const userMenuRef = useRef(null);
-  const notifRef = useRef(null);
 
   // Global search keyboard shortcut ("/")
   useEffect(() => {
@@ -66,9 +62,6 @@ export default function AppLayout({
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
         setIsUserMenuOpen(false);
       }
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setIsNotifOpen(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -76,7 +69,6 @@ export default function AppLayout({
 
   const navLinks = [
     { id: 'problems', label: 'Problems', href: '#problems' },
-    { id: 'contests', label: 'Contests', href: '#contests' },
     { id: 'discuss', label: 'Discuss', href: '#discuss' },
     { id: 'leaderboard', label: 'Leaderboard', href: '#leaderboard' },
   ];
@@ -84,7 +76,6 @@ export default function AppLayout({
   const sidebarItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'problems', label: 'Problems', icon: Code2 },
-    { id: 'contests', label: 'Contests', icon: Trophy },
     { id: 'submissions', label: 'Submissions', icon: History },
     { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
     { id: 'settings', label: 'Settings', icon: Settings },
@@ -130,7 +121,7 @@ export default function AppLayout({
             </nav>
           </div>
 
-          {/* Right section: Global Search, Notifications, Theme, User Avatar */}
+          {/* Right section: Global Search, Theme, User Avatar */}
           <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Global Search Bar */}
             <form onSubmit={handleSearchSubmit} className="relative hidden sm:block w-44 md:w-60">
@@ -151,29 +142,6 @@ export default function AppLayout({
                 </kbd>
               </div>
             </form>
-
-            {/* Notifications Bell */}
-            <div className="relative" ref={notifRef}>
-              <button
-                type="button"
-                onClick={() => setIsNotifOpen(!isNotifOpen)}
-                aria-label="View notifications"
-                className="p-1.5 rounded-[var(--radius-sm)] border border-border-default bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover transition-colors cursor-pointer relative"
-              >
-                <Bell className="w-4 h-4" />
-              </button>
-
-              {isNotifOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-bg-surface border border-border-default rounded-[var(--radius-md)] shadow-lg py-2 z-50 text-xs">
-                  <div className="px-3 py-1.5 border-b border-border-subtle flex items-center justify-between font-medium">
-                    <span>Notifications</span>
-                  </div>
-                  <div className="px-3 py-6 text-center text-text-muted">
-                    No notifications yet.
-                  </div>
-                </div>
-              )}
-            </div>
 
             {/* Theme Toggle Button */}
             <button

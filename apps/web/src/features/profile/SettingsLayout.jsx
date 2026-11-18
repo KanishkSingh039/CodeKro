@@ -1,5 +1,5 @@
 import React from 'react';
-import { User, KeyRound, Sliders, Shield, Bell, ArrowLeft } from 'lucide-react';
+import { User, KeyRound, ArrowLeft } from 'lucide-react';
 import { COPY } from '../../constants/copy';
 
 /**
@@ -15,9 +15,6 @@ export default function SettingsLayout({
   const tabs = [
     { id: 'profile', label: COPY.settings.tabs.profile, icon: User },
     { id: 'account', label: COPY.settings.tabs.account, icon: KeyRound },
-    { id: 'preferences', label: COPY.settings.tabs.preferences, icon: Sliders },
-    { id: 'privacy', label: COPY.settings.tabs.privacy, icon: Shield },
-    { id: 'notifications', label: COPY.settings.tabs.notifications, icon: Bell },
   ];
 
   return (

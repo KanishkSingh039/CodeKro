@@ -6,8 +6,6 @@ import GreetingRow from './GreetingRow';
 import TopicChips from './TopicChips';
 import ProgressCard from './ProgressCard';
 import StreakActivityCard from './StreakActivityCard';
-import DailyProblemCard from './DailyProblemCard';
-import UpcomingContestsCard from './UpcomingContestsCard';
 import RecentSubmissionsCard from './RecentSubmissionsCard';
 import FilterBar from '../../components/ui/FilterBar';
 import DataTable from '../../components/ui/DataTable';
@@ -191,28 +189,16 @@ export default function DashboardView({ onNavigateProblem }) {
   // 3. User session stats
   const { data: userStats, isLoading: isStatsLoading } = useQuery({
     queryKey: ['stats'],
-    queryFn: apiClient.getUserStats,
+    queryFn: () => apiClient.getUserStats(),
   });
 
   // 4. Streak & 12-week heatmap activity
   const { data: userActivity, isLoading: isActivityLoading } = useQuery({
     queryKey: ['activity'],
-    queryFn: apiClient.getUserActivity,
+    queryFn: () => apiClient.getUserActivity(),
   });
 
-  // 5. Daily problem challenge
-  const { data: dailyData, isLoading: isDailyLoading } = useQuery({
-    queryKey: ['daily-problem'],
-    queryFn: apiClient.getDailyProblem,
-  });
-
-  // 6. Upcoming contests
-  const { data: upcomingContests, isLoading: isContestsLoading } = useQuery({
-    queryKey: ['contests'],
-    queryFn: apiClient.getUpcomingContests,
-  });
-
-  // 7. Recent submissions
+  // 5. Recent submissions
   const { data: recentSubmissions, isLoading: isSubmissionsLoading } = useQuery({
     queryKey: ['submissions'],
     queryFn: () => apiClient.getRecentSubmissions(5),
@@ -343,27 +329,15 @@ export default function DashboardView({ onNavigateProblem }) {
           />
         </div>
 
-        {/* RIGHT COLUMN: Sidebar Stats & Daily (4 cols on desktop) */}
+        {/* RIGHT COLUMN: Sidebar Stats (4 cols on desktop) */}
         <div className="lg:col-span-4 flex flex-col gap-4 order-2 lg:order-2 lg:min-h-0 lg:overflow-y-auto overscroll-contain [&>*]:shrink-0">
           {/* 1. Session Progress Card */}
           <ProgressCard stats={userStats} isLoading={isStatsLoading} />
 
-          {/* 2. Daily Problem Challenge */}
-          <DailyProblemCard
-            daily={dailyData}
-            isLoading={isDailyLoading}
-            onSolve={(p) => {
-              if (onNavigateProblem) onNavigateProblem(p);
-            }}
-          />
-
-          {/* 3. Streak and Activity Heatmap */}
+          {/* 2. Streak and Activity Heatmap */}
           <StreakActivityCard activity={userActivity} isLoading={isActivityLoading} />
 
-          {/* 4. Upcoming Contests */}
-          <UpcomingContestsCard contests={upcomingContests} isLoading={isContestsLoading} />
-
-          {/* 5. Recent Submissions */}
+          {/* 3. Recent Submissions */}
           <RecentSubmissionsCard
             submissions={recentSubmissions}
             isLoading={isSubmissionsLoading}

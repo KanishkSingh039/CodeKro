@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import {
-  ThumbsUp,
-  ThumbsDown,
   Star,
   Share2,
   Tag,
@@ -21,7 +19,6 @@ import { COPY } from '../../constants/copy';
  */
 export default function ProblemDescription({
   problem,
-  onVote,
   onBookmarkToggle,
 }) {
   const [showTopics, setShowTopics] = useState(false);
@@ -158,40 +155,8 @@ export default function ProblemDescription({
         <HintList hints={problem.hints} />
       )}
 
-      {/* Footer Action Row: Votes, Bookmark, Share, Report */}
+      {/* Footer Action Row: Bookmark, Share */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border-default text-xs text-text-muted">
-        {onVote && <div className="flex items-center gap-2">
-          {/* Like */}
-          <button
-            type="button"
-            onClick={() => onVote && onVote('like')}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[var(--radius-sm)] border border-border-default transition-colors cursor-pointer ${
-              problem.userVote === 'like'
-                ? 'bg-bg-surface-subtle text-accent border-accent/40 font-medium'
-                : 'bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover'
-            }`}
-            title="Like this problem"
-          >
-            <ThumbsUp className="w-3.5 h-3.5" />
-            <span className="font-mono">{problem.likes || 0}</span>
-          </button>
-
-          {/* Dislike */}
-          <button
-            type="button"
-            onClick={() => onVote && onVote('dislike')}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-[var(--radius-sm)] border border-border-default transition-colors cursor-pointer ${
-              problem.userVote === 'dislike'
-                ? 'bg-bg-surface-subtle text-text-primary border-border-default font-medium'
-                : 'bg-bg-surface text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover'
-            }`}
-            title="Dislike this problem"
-          >
-            <ThumbsDown className="w-3.5 h-3.5" />
-            <span className="font-mono">{problem.dislikes || 0}</span>
-          </button>
-        </div>}
-
         <div className="flex items-center gap-2">
           {/* Bookmark */}
           {onBookmarkToggle && (
