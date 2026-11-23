@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Logo from '../components/ui/Logo';
+import { apiClient } from '../lib/api';
 import {
   Sun,
   Moon,
@@ -25,7 +26,7 @@ export default function AppLayout({
   theme = 'dark',
   onToggleTheme,
   user = {},
-  onGlobalSearch,
+  onUserSelect,
 }) {
   const displayName = user?.name || user?.username || 'Account';
   const displayUsername = user?.username || '';
@@ -35,8 +36,12 @@ export default function AppLayout({
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchStatus, setSearchStatus] = useState('idle');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const searchInputRef = useRef(null);
+  const searchRef = useRef(null);
   const userMenuRef = useRef(null);
 
   // Global search keyboard shortcut ("/")
@@ -62,6 +67,9 @@ export default function AppLayout({
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
         setIsUserMenuOpen(false);
       }
+      if (searchRef.current && !searchRef.current.contains(e.target)) {
+        setIsSearchOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -81,11 +89,33 @@ export default function AppLayout({
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
-  const handleSearchSubmit = (e) => {
+  const handleSearchSubmit = async (e) => {
     e.preventDefault();
-    if (onGlobalSearch) {
-      onGlobalSearch(searchQuery);
+    const query = searchQuery.trim();
+    if (!query) {
+      setSearchResults([]);
+      setIsSearchOpen(false);
+      return;
     }
+
+    setIsSearchOpen(true);
+    setSearchStatus('loading');
+    try {
+      const results = await apiClient.searchUsers(query);
+      setSearchResults(results.filter((result) => String(result.id) !== String(user?.id)));
+      setSearchStatus('ready');
+    } catch {
+      setSearchResults([]);
+      setSearchStatus('error');
+    }
+  };
+
+  const handleUserSelect = (selected) => {
+    if (!selected?.username) return;
+    setSearchQuery('');
+    setSearchResults([]);
+    setIsSearchOpen(false);
+    onUserSelect?.(selected.username);
   };
 
   return (
@@ -124,7 +154,11 @@ export default function AppLayout({
           {/* Right section: Global Search, Theme, User Avatar */}
           <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Global Search Bar */}
-            <form onSubmit={handleSearchSubmit} className="relative hidden sm:block w-44 md:w-60">
+            <form
+              ref={searchRef}
+              onSubmit={handleSearchSubmit}
+              className="relative hidden sm:block w-44 md:w-60"
+            >
               <div className="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-text-muted">
                 <Search className="w-3.5 h-3.5" />
               </div>
@@ -132,7 +166,10 @@ export default function AppLayout({
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setIsSearchOpen(false);
+                }}
                 placeholder="Search..."
                 className="w-full h-8 pl-8 pr-8 text-xs bg-bg-input border border-border-default text-text-primary placeholder:text-text-muted rounded-[var(--radius-sm)] focus:border-accent focus:outline-none"
               />
@@ -141,6 +178,40 @@ export default function AppLayout({
                   /
                 </kbd>
               </div>
+              {isSearchOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1 z-50 max-h-80 overflow-y-auto rounded-[var(--radius-md)] border border-border-default bg-bg-surface text-xs shadow-xl">
+                  {searchStatus === 'loading' && (
+                    <div className="px-3 py-2 text-text-muted">Searching...</div>
+                  )}
+                  {searchStatus === 'error' && (
+                    <div className="px-3 py-2 text-error">Search failed. Try again.</div>
+                  )}
+                  {searchStatus === 'ready' && searchResults.length === 0 && (
+                    <div className="px-3 py-2 text-text-muted">No users found.</div>
+                  )}
+                  {searchStatus === 'ready' &&
+                    searchResults.map((result) => (
+                      <button
+                        key={result.id}
+                        type="button"
+                        onClick={() => handleUserSelect(result)}
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-bg-surface-hover cursor-pointer"
+                      >
+                        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border-default bg-bg-surface-subtle text-[10px] font-mono text-accent">
+                          {(result.name || result.username || '?').slice(0, 2).toUpperCase()}
+                        </span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-text-primary">
+                            {result.name || result.username}
+                          </span>
+                          <span className="block truncate text-[11px] text-text-muted">
+                            @{result.username}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              )}
             </form>
 
             {/* Theme Toggle Button */}

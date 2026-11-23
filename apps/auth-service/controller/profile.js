@@ -70,13 +70,20 @@ const getActivityLevel = (count) => {
 
 const dateKey = (date) => date.toISOString().slice(0, 10);
 
-const findUserByUsername = (username) => {
-  const normalized = normalizeUsername(username);
-  if (!normalized) return null;
+const findUserByUsername = async (username) => {
+  const raw = String(username || '').trim();
+  if (!raw) return null;
 
-  return CodeKroUser.findOne({
-    username: { $regex: `^${escapeRegex(normalized)}$`, $options: 'i' },
+  const exact = await CodeKroUser.findOne({
+    username: { $regex: `^${escapeRegex(raw)}$` },
   });
+  if (exact) return exact;
+
+  const candidates = await CodeKroUser.find({
+    username: { $regex: `^${escapeRegex(raw)}$`, $options: 'i' },
+  }).limit(2);
+
+  return candidates.length === 1 ? candidates[0] : null;
 };
 
 const signToken = (user) =>
@@ -231,6 +238,7 @@ const searchUsers = async (req, res) => {
 
     const regex = new RegExp(escapeRegex(query), 'i');
     const users = await CodeKroUser.find({
+      _id: { $ne: req.user.id },
       $or: [{ username: regex }, { name: regex }],
     })
       .select('name username picture followers')

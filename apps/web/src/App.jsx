@@ -163,6 +163,11 @@ export default function App() {
     setSettingsTab(loc.settingsTab || 'profile');
   };
 
+  const openUserProfile = (username) => {
+    if (!username) return;
+    navigateTo(`/u/${encodeURIComponent(username)}`);
+  };
+
   const profilePath = () =>
     sessionUser?.username ? `/u/${encodeURIComponent(sessionUser.username)}` : '/login';
 
@@ -244,6 +249,7 @@ export default function App() {
           }}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onUserSelect={openUserProfile}
         >
           <ProfileView
             username={targetUsername || sessionUser?.username || ''}
@@ -271,6 +277,7 @@ export default function App() {
           }}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onUserSelect={openUserProfile}
         >
           <SettingsView
             user={sessionUser}
@@ -304,6 +311,7 @@ export default function App() {
           }}
           theme={theme}
           onToggleTheme={toggleTheme}
+          onUserSelect={openUserProfile}
         >
           <DashboardView
             onNavigateProblem={(problem) => {

@@ -195,6 +195,15 @@ export async function request(url, options = {}) {
 
     clearTimeout(timeoutId);
 
+    if (response.status === 429) {
+      const retryAfter = Number(response.headers.get('retry-after'));
+      const retryHint =
+        Number.isFinite(retryAfter) && retryAfter > 0
+          ? ` Try again in ${retryAfter} seconds.`
+          : ' Please try again shortly.';
+      throw new ApiError(`Too many requests.${retryHint}`, 429);
+    }
+
     const contentType = response.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
     const responseData = isJson ? await response.json() : await response.text();
