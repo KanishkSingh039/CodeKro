@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import SettingsLayout from './SettingsLayout';
 import ProfileForm from './ProfileForm';
 import AccountForm from './AccountForm';
+import Button from '../../components/ui/Button';
 import { apiClient } from '../../lib/api';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 
 /**
  * SettingsView Component
@@ -13,11 +14,12 @@ import { CheckCircle2, AlertCircle } from 'lucide-react';
 export default function SettingsView({
   user,
   initialTab = 'profile',
+  onTabChange,
   onBackToProfile,
   onAccountDeleted,
   onSessionRefresh,
 }) {
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const activeTab = initialTab;
   const [isFormDirty, setIsFormDirty] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -67,6 +69,7 @@ export default function SettingsView({
   });
 
   const handleTabChange = (newTab) => {
+    if (newTab === activeTab) return;
     if (isFormDirty) {
       const confirmLeave = window.confirm(
         'You have unsaved changes. Are you sure you want to switch tabs without saving?'
@@ -74,7 +77,7 @@ export default function SettingsView({
       if (!confirmLeave) return;
     }
     setIsFormDirty(false);
-    setActiveTab(newTab);
+    if (onTabChange) onTabChange(newTab);
   };
 
   const handleBackToProfile = () => {
@@ -115,28 +118,56 @@ export default function SettingsView({
         </div>
       )}
 
-      {/* Profile Tab */}
-      {activeTab === 'profile' && (
-        <ProfileForm
-          key={profileQuery.data?.id || 'profile-loading'}
-          initialProfile={profileQuery.data}
-          isSaving={updateProfileMutation.isPending}
-          onSave={(data) => updateProfileMutation.mutate(data)}
-          onDirtyChange={setIsFormDirty}
-        />
-      )}
+      {profileQuery.isLoading ? (
+        <div className="flex items-center gap-2 rounded-[var(--radius-md)] border border-border-default bg-bg-surface px-4 py-6 text-xs text-text-muted">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Loading settings...</span>
+        </div>
+      ) : profileQuery.isError ? (
+        <div
+          role="alert"
+          className="flex flex-wrap items-center gap-3 rounded-[var(--radius-md)] border border-error/40 bg-error/10 px-4 py-3 text-xs text-error"
+        >
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span className="min-w-0 flex-1">Could not load your settings.</span>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => profileQuery.refetch()}
+            className="text-xs"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Retry
+          </Button>
+        </div>
+      ) : (
+        <>
+          {/* Profile Tab */}
+          {activeTab === 'profile' && (
+            <ProfileForm
+              key={profileQuery.data?.id || 'profile'}
+              initialProfile={profileQuery.data}
+              isSaving={updateProfileMutation.isPending}
+              onSave={(data) => updateProfileMutation.mutate(data)}
+              onDirtyChange={setIsFormDirty}
+            />
+          )}
 
-      {/* Account Tab */}
-      {activeTab === 'account' && (
-        <AccountForm
-          key={profileQuery.data?.id || 'account-loading'}
-          initialUser={profileQuery.data}
-          onDeleteAccount={async (phrase) => {
-            await apiClient.deleteAccount(phrase);
-            if (onAccountDeleted) onAccountDeleted();
-          }}
-          onSessionRefresh={onSessionRefresh}
-        />
+          {/* Account Tab */}
+          {activeTab === 'account' && (
+            <AccountForm
+              key={profileQuery.data?.id || 'account'}
+              initialUser={profileQuery.data}
+              onDeleteAccount={async (phrase) => {
+                await apiClient.deleteAccount(phrase);
+                if (onAccountDeleted) onAccountDeleted();
+              }}
+              onSessionRefresh={onSessionRefresh}
+              onDirtyChange={setIsFormDirty}
+            />
+          )}
+        </>
       )}
     </SettingsLayout>
   );

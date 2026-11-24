@@ -9,6 +9,60 @@ const { problem: Problem, Solution } = require('@codekro/db_config');
 const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const AVATAR_DATA_PATTERN = /^data:image\/(jpeg|png|webp);base64,/;
+const PROFILE_FIELD_LABELS = {
+  name: 'Display name',
+  bio: 'Bio',
+  location: 'Location',
+  organization: 'College or company',
+  website: 'Personal website',
+  github: 'GitHub',
+  linkedin: 'LinkedIn',
+};
+
+const withProtocol = (value) => (/^https?:\/\//i.test(value) ? value : `https://${value}`);
+
+const isProfileUrl = (value, hosts, pathPattern) => {
+  try {
+    const parsed = new URL(withProtocol(value));
+    return (
+      ['http:', 'https:'].includes(parsed.protocol) &&
+      Boolean(parsed.hostname) &&
+      hosts.includes(parsed.hostname.toLowerCase()) &&
+      pathPattern.test(parsed.pathname)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const isWebsiteUrl = (value) => {
+  try {
+    const parsed = new URL(withProtocol(value));
+    return (
+      ['http:', 'https:'].includes(parsed.protocol) &&
+      Boolean(parsed.hostname) &&
+      (parsed.hostname === 'localhost' || parsed.hostname.includes('.'))
+    );
+  } catch {
+    return false;
+  }
+};
+
+const isGithubValue = (value) => {
+  const handle = value.replace(/^@/, '');
+  return (
+    (!handle.includes('/') && /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i.test(handle)) ||
+    isProfileUrl(handle, ['github.com', 'www.github.com'], /^\/[a-z\d-]+\/?$/i)
+  );
+};
+
+const isLinkedinValue = (value) => {
+  const handle = value.replace(/^@/, '');
+  return (
+    (!handle.includes('/') && /^[a-z\d-]{3,100}$/i.test(handle)) ||
+    isProfileUrl(handle, ['linkedin.com', 'www.linkedin.com'], /^\/in\/[a-z\d-]+(?:\/.*)?$/i)
+  );
+};
 
 const safeTokenPicture = (value) => {
   const picture = String(value || '');
@@ -526,6 +580,15 @@ const updateProfile = async (req, res) => {
     if (updates.name !== undefined && updates.name.length > 100) {
       return res.status(400).json({ message: 'Display name cannot exceed 100 characters' });
     }
+    if (updates.website && !isWebsiteUrl(updates.website)) {
+      return res.status(400).json({ message: 'Enter a valid website URL' });
+    }
+    if (updates.github && !isGithubValue(updates.github)) {
+      return res.status(400).json({ message: 'Enter a GitHub username or github.com profile URL' });
+    }
+    if (updates.linkedin && !isLinkedinValue(updates.linkedin)) {
+      return res.status(400).json({ message: 'Enter a LinkedIn username or linkedin.com/in profile URL' });
+    }
 
     Object.assign(user, updates);
     await user.save();
@@ -533,6 +596,14 @@ const updateProfile = async (req, res) => {
 
     return res.status(200).json({ message: 'Profile updated successfully' });
   } catch (error) {
+    if (error.name === 'ValidationError') {
+      const firstError = Object.values(error.errors)[0];
+      const label = PROFILE_FIELD_LABELS[firstError?.path] || 'Profile field';
+      const max = firstError?.properties?.maxlength;
+      return res.status(400).json({
+        message: max ? `${label} cannot exceed ${max} characters` : firstError?.message || 'Invalid profile data',
+      });
+    }
     logger.error(`Failed to update profile: ${error.message}`);
     return res.status(500).json({ message: 'Failed to update profile' });
   }

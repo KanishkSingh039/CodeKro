@@ -11,23 +11,29 @@ import { COPY } from '../../constants/copy';
  */
 export default function DangerZone({ onDeleteAccount, isDeleting = false }) {
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [typedPhrase, setTypedPhrase] = useState('');
   const [error, setError] = useState('');
+  const isBusy = isDeleting || isSubmitting;
 
   const requiredPhrase = 'delete my account';
   const isMatch = typedPhrase.trim().toLowerCase() === requiredPhrase;
 
   const handleDelete = async () => {
+    if (isBusy) return;
     if (!isMatch) {
       setError(`Please type "${requiredPhrase}" exactly to confirm.`);
       return;
     }
     setError('');
     if (onDeleteAccount) {
+      setIsSubmitting(true);
       try {
         await onDeleteAccount(typedPhrase);
       } catch (err) {
         setError(err.message || 'Failed to delete account.');
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -85,6 +91,7 @@ export default function DangerZone({ onDeleteAccount, isDeleting = false }) {
                 setTypedPhrase('');
                 setError('');
               }}
+              disabled={isBusy}
               className="text-xs"
             >
               {COPY.settings.dangerZone.cancelBtn}
@@ -93,8 +100,8 @@ export default function DangerZone({ onDeleteAccount, isDeleting = false }) {
               type="button"
               variant="ghost"
               size="sm"
-              disabled={!isMatch || isDeleting}
-              loading={isDeleting}
+              disabled={!isMatch || isBusy}
+              loading={isBusy}
               onClick={handleDelete}
               className="text-xs bg-error text-white hover:bg-error/90 disabled:opacity-50"
             >

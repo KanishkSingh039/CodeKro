@@ -9,12 +9,13 @@ import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 /**
  * AccountForm Component
- * Manages username (with availability check), email verification, password change,
- * connected OAuth accounts, and DangerZone deletion.
+ * Manages username (with availability check), password change, profile links,
+ * and DangerZone deletion.
  */
 export default function AccountForm({
   initialUser = {},
   onDeleteAccount,
+  onDirtyChange,
 }) {
   const [username, setUsername] = useState(initialUser.username || '');
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
@@ -31,25 +32,44 @@ export default function AccountForm({
   });
   const [passwordStatus, setPasswordStatus] = useState({ loading: false, success: '', error: '' });
 
+  const isDirty =
+    username !== (initialUser.username || '') ||
+    Boolean(passwords.current || passwords.newPass || passwords.confirm);
+
+  useEffect(() => {
+    if (onDirtyChange) onDirtyChange(isDirty);
+  }, [isDirty, onDirtyChange]);
+
   // Debounced username availability validation
   useEffect(() => {
+    let cancelled = false;
+
     if (!username || username === initialUser.username) {
+      setIsCheckingUsername(false);
       setUsernameStatus(null);
       setUsernameMessage('');
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     const regex = /^[a-zA-Z0-9_]{3,20}$/;
     if (!regex.test(username)) {
+      setIsCheckingUsername(false);
       setUsernameStatus('invalid');
       setUsernameMessage('Username must be 3-20 characters (letters, numbers, underscores).');
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     setIsCheckingUsername(true);
+    setUsernameStatus(null);
+    setUsernameMessage('');
     const timer = setTimeout(async () => {
       try {
         const res = await apiClient.checkUsernameAvailable(username);
+        if (cancelled) return;
         if (res.available) {
           setUsernameStatus('available');
           setUsernameMessage(COPY.settings.accountForm.usernameAvailable);
@@ -58,13 +78,19 @@ export default function AccountForm({
           setUsernameMessage(COPY.settings.accountForm.usernameTaken);
         }
       } catch {
-        setUsernameStatus(null);
+        if (!cancelled) {
+          setUsernameStatus(null);
+          setUsernameMessage('Could not verify username. Try again.');
+        }
       } finally {
-        setIsCheckingUsername(false);
+        if (!cancelled) setIsCheckingUsername(false);
       }
     }, 450);
 
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [username, initialUser.username]);
 
   const handleUsernameSubmit = async (event) => {
@@ -132,6 +158,8 @@ export default function AccountForm({
             <Input
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase().trim())}
+              maxLength={20}
+              autoComplete="username"
               className="text-xs font-mono pr-8"
             />
             <div className="absolute right-2.5 top-2.5">
@@ -200,6 +228,9 @@ export default function AccountForm({
         <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
           {COPY.settings.accountForm.passwordTitle}
         </h3>
+        <p className="text-[11px] text-text-muted">
+          Password changes are only available for accounts that use email/password sign-in.
+        </p>
 
         <form onSubmit={handlePasswordSubmit} className="space-y-3.5">
           <div className="space-y-1.5">
@@ -211,6 +242,7 @@ export default function AccountForm({
               value={passwords.current}
               onChange={(e) => setPasswords((p) => ({ ...p, current: e.target.value }))}
               placeholder="••••••••"
+              autoComplete="current-password"
               className="text-xs font-mono"
             />
           </div>
@@ -225,6 +257,7 @@ export default function AccountForm({
                 value={passwords.newPass}
                 onChange={(e) => setPasswords((p) => ({ ...p, newPass: e.target.value }))}
                 placeholder="••••••••"
+                autoComplete="new-password"
                 className="text-xs font-mono"
               />
             </div>
@@ -237,6 +270,7 @@ export default function AccountForm({
                 value={passwords.confirm}
                 onChange={(e) => setPasswords((p) => ({ ...p, confirm: e.target.value }))}
                 placeholder="••••••••"
+                autoComplete="new-password"
                 className="text-xs font-mono"
               />
             </div>
@@ -263,32 +297,28 @@ export default function AccountForm({
         </form>
       </Card>
 
-      {/* 3. Connected OAuth Accounts */}
+      {/* 3. Profile Links */}
       <Card padding="md" className="space-y-3">
         <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted">
           {COPY.settings.accountForm.connectedTitle}
         </h3>
+        <p className="text-[11px] text-text-muted">
+          These links are displayed on your public profile.
+        </p>
 
         <div className="divide-y divide-border-subtle">
-          <div className="py-2.5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-text-primary">Email</p>
-              <p className="text-[11px] text-text-muted">
-                {initialUser.email || 'Not available'}
-              </p>
-            </div>
+          <div className="space-y-0.5 py-2.5">
+            <p className="text-xs font-medium text-text-primary">GitHub</p>
+            <p className="break-all text-[11px] text-text-muted">
+              {initialUser.github || 'No GitHub profile link added.'}
+            </p>
           </div>
 
-          <div className="py-2.5 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-medium text-text-primary">GitHub</p>
-              <p className="text-[11px] text-text-muted">
-                {initialUser.github ? `Connected as @${initialUser.github}` : 'Not connected'}
-              </p>
-            </div>
-            <span className="text-xs font-mono text-text-muted">
-              {initialUser.github ? 'Connected' : 'Not connected'}
-            </span>
+          <div className="space-y-0.5 py-2.5">
+            <p className="text-xs font-medium text-text-primary">LinkedIn</p>
+            <p className="break-all text-[11px] text-text-muted">
+              {initialUser.linkedin || 'No LinkedIn profile link added.'}
+            </p>
           </div>
         </div>
       </Card>

@@ -5,6 +5,69 @@ import Input from '../../components/ui/Input';
 import AvatarUploader from './AvatarUploader';
 import { COPY } from '../../constants/copy';
 
+const MAX_BIO = 160;
+const MAX_NAME = 100;
+const MAX_LOCATION = 100;
+const MAX_ORGANIZATION = 100;
+const MAX_WEBSITE = 200;
+const MAX_GITHUB = 100;
+const MAX_LINKEDIN = 200;
+
+const trimValue = (value) => String(value || '').trim();
+
+const withProtocol = (value) => {
+  const trimmed = trimValue(value);
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+};
+
+const isWebUrl = (value) => {
+  try {
+    const parsed = new URL(withProtocol(value));
+    return (
+      ['http:', 'https:'].includes(parsed.protocol) &&
+      Boolean(parsed.hostname) &&
+      (parsed.hostname === 'localhost' || parsed.hostname.includes('.'))
+    );
+  } catch {
+    return false;
+  }
+};
+
+const GITHUB_HANDLE_PATTERN = /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i;
+const LINKEDIN_HANDLE_PATTERN = /^[a-z\d-]{3,100}$/i;
+
+const isGithubValue = (value) => {
+  const trimmed = trimValue(value).replace(/^@/, '');
+  if (!trimmed) return true;
+  if (!trimmed.includes('/') && GITHUB_HANDLE_PATTERN.test(trimmed)) return true;
+
+  try {
+    const parsed = new URL(withProtocol(trimmed));
+    return (
+      ['github.com', 'www.github.com'].includes(parsed.hostname.toLowerCase()) &&
+      /^\/[a-z\d-]+\/?$/i.test(parsed.pathname)
+    );
+  } catch {
+    return false;
+  }
+};
+
+const isLinkedinValue = (value) => {
+  const trimmed = trimValue(value).replace(/^@/, '');
+  if (!trimmed) return true;
+  if (!trimmed.includes('/') && LINKEDIN_HANDLE_PATTERN.test(trimmed)) return true;
+
+  try {
+    const parsed = new URL(withProtocol(trimmed));
+    return (
+      ['linkedin.com', 'www.linkedin.com'].includes(parsed.hostname.toLowerCase()) &&
+      /^\/in\/[a-z\d-]+(?:\/.*)?$/i.test(parsed.pathname)
+    );
+  } catch {
+    return false;
+  }
+};
+
 /**
  * ProfileForm Component
  * Edit profile fields: avatar, display name, bio (with 160 char counter),
@@ -49,18 +112,31 @@ export default function ProfileForm({
     if (onDirtyChange) onDirtyChange(isDirty);
   }, [isDirty, onDirtyChange]);
 
-  const validate = () => {
+  const validate = (data) => {
     const errs = {};
-    if (!formData.name.trim()) {
+    if (!data.name) {
       errs.name = 'Display name cannot be empty.';
     }
-    if (formData.bio.length > 160) {
-      errs.bio = 'Bio cannot exceed 160 characters.';
+    if (data.name.length > MAX_NAME) {
+      errs.name = `Display name cannot exceed ${MAX_NAME} characters.`;
     }
-    // Optional URL validation
-    const urlPattern = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/i;
-    if (formData.website && !urlPattern.test(formData.website)) {
-      errs.website = 'Please enter a valid website URL.';
+    if (data.bio.length > MAX_BIO) {
+      errs.bio = `Bio cannot exceed ${MAX_BIO} characters.`;
+    }
+    if (data.location.length > MAX_LOCATION) {
+      errs.location = `Location cannot exceed ${MAX_LOCATION} characters.`;
+    }
+    if (data.organization.length > MAX_ORGANIZATION) {
+      errs.organization = `College or company cannot exceed ${MAX_ORGANIZATION} characters.`;
+    }
+    if (data.website && !isWebUrl(data.website)) {
+      errs.website = 'Enter a valid website URL.';
+    }
+    if (data.github && !isGithubValue(data.github)) {
+      errs.github = 'Enter a GitHub username or github.com profile URL.';
+    }
+    if (data.linkedin && !isLinkedinValue(data.linkedin)) {
+      errs.linkedin = 'Enter a LinkedIn username or linkedin.com/in profile URL.';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -75,12 +151,18 @@ export default function ProfileForm({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validate()) return;
-    if (onSave) onSave(formData);
+    const normalized = Object.fromEntries(
+      Object.entries(formData).map(([key, value]) => [
+        key,
+        typeof value === 'string' ? value.trim() : value,
+      ])
+    );
+    if (!validate(normalized)) return;
+    setFormData(normalized);
+    if (onSave) onSave(normalized);
   };
 
-  const maxBio = 160;
-  const bioRemaining = maxBio - (formData.bio?.length || 0);
+  const bioRemaining = MAX_BIO - (formData.bio?.length || 0);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -103,6 +185,7 @@ export default function ProfileForm({
               onChange={(e) => handleChange('name', e.target.value)}
               placeholder="e.g. Alex Morgan"
               error={errors.name}
+              maxLength={MAX_NAME}
               className="text-xs"
             />
           </div>
@@ -118,7 +201,7 @@ export default function ProfileForm({
                   bioRemaining < 0 ? 'text-error font-bold' : 'text-text-muted'
                 }`}
               >
-                {formData.bio.length} / {maxBio}
+                {formData.bio.length} / {MAX_BIO}
               </span>
             </div>
             <textarea
@@ -126,6 +209,7 @@ export default function ProfileForm({
               value={formData.bio}
               onChange={(e) => handleChange('bio', e.target.value)}
               placeholder="Write a brief overview of your background and technical interests..."
+              maxLength={MAX_BIO}
               className={`w-full p-2.5 text-xs bg-bg-input border ${
                 errors.bio ? 'border-error' : 'border-border-default'
               } text-text-primary placeholder:text-text-muted rounded-[var(--radius-sm)] focus:border-accent focus:outline-none resize-none`}
@@ -148,6 +232,8 @@ export default function ProfileForm({
                 value={formData.location}
                 onChange={(e) => handleChange('location', e.target.value)}
                 placeholder="e.g. San Francisco, CA"
+                error={errors.location}
+                maxLength={MAX_LOCATION}
                 className="text-xs"
               />
             </div>
@@ -159,6 +245,8 @@ export default function ProfileForm({
                 value={formData.organization}
                 onChange={(e) => handleChange('organization', e.target.value)}
                 placeholder="e.g. University / Tech Corp"
+                error={errors.organization}
+                maxLength={MAX_ORGANIZATION}
                 className="text-xs"
               />
             </div>
@@ -179,6 +267,7 @@ export default function ProfileForm({
                 onChange={(e) => handleChange('website', e.target.value)}
                 placeholder="https://yourdomain.dev"
                 error={errors.website}
+                maxLength={MAX_WEBSITE}
                 className="text-xs font-mono"
               />
             </div>
@@ -191,6 +280,8 @@ export default function ProfileForm({
                 value={formData.github}
                 onChange={(e) => handleChange('github', e.target.value)}
                 placeholder="username or URL"
+                error={errors.github}
+                maxLength={MAX_GITHUB}
                 className="text-xs font-mono"
               />
             </div>
@@ -203,6 +294,8 @@ export default function ProfileForm({
                 value={formData.linkedin}
                 onChange={(e) => handleChange('linkedin', e.target.value)}
                 placeholder="https://linkedin.com/in/username"
+                error={errors.linkedin}
+                maxLength={MAX_LINKEDIN}
                 className="text-xs font-mono"
               />
             </div>

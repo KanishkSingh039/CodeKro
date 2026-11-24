@@ -253,7 +253,7 @@ public:
   },
   settings: {
     title: 'Settings',
-    subtitle: 'Manage your profile identity, account security, and editor preferences.',
+    subtitle: 'Manage your profile identity and account security.',
     tabs: {
       profile: 'Profile',
       account: 'Account',
@@ -291,7 +291,7 @@ public:
       newPasswordLabel: 'New password',
       confirmPasswordLabel: 'Confirm new password',
       changePasswordBtn: 'Update password',
-      connectedTitle: 'Connected Accounts',
+      connectedTitle: 'Profile Links',
       disconnect: 'Disconnect',
       connect: 'Connect',
     },

@@ -282,6 +282,7 @@ export default function App() {
           <SettingsView
             user={sessionUser}
             initialTab={settingsTab}
+            onTabChange={(tab) => navigateTo(`/settings/${tab}`)}
             onBackToProfile={() => navigateTo(profilePath())}
             onAccountDeleted={() => {
               void handleLogout();
